@@ -36,3 +36,62 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+:root {
+    --off-black: #121013;
+    --purple: #7c3aed;
+    --purple-light: #9d5ce8;
+}
+
+.custom-navbar {
+    background-color: var(--off-black);
+    border-bottom: 1px solid rgba(124, 58, 237, 0.25);
+}
+
+    .custom-navbar .nav-link {
+        color: #e5e5e5;
+        transition: color 0.2s ease;
+    }
+
+        .custom-navbar .nav-link:hover {
+            color: var(--purple-light);
+        }
+
+    .custom-navbar .navbar-brand {
+        color: var(--purple-light);
+    }
+
+.btn-purple {
+    background-color: var(--purple);
+    border: none;
+    color: white;
+}
+
+    .btn-purple:hover {
+        background-color: var(--purple-light);
+    }
+
+body {
+    background-color: var(--off-black);
+    color: #e5e5e5; 
+}
+.bg-off-black {
+    background-color: var(--off-black);
+}
+
+.text-purple {
+    color: #7c3aed; 
+}
+
+.text-purple-glow {
+    color: #7c3aed;
+    text-shadow: 0 0 8px rgba(124, 58, 237, 0.8), 0 0 20px rgba(124, 58, 237, 0.5);
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%; /* starts empty */
+    background: linear-gradient(90deg, #7c3aed, #9d5ce8);
+    border-radius: 4px;
+    transition: width 1.4s ease-out;
+}

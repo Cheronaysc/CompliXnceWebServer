@@ -1,4 +1,5 @@
 ﻿using CompliXnceWebApp.Backend.Services.UserServices;
+using System.Security.Cryptography.X509Certificates;
 namespace CompliXnceWebApp.Backend.Services.UserServices
 {
     public class AuthenticationService
@@ -10,10 +11,13 @@ namespace CompliXnceWebApp.Backend.Services.UserServices
         {
             return true;
         }
+        
 
-        public async Task<UserSession> AuthenticateUser(LogInDto logInDto) {
+        public async Task<bool> AuthenticateUser(LogInDto logInDto) 
+        {
             {
-                string session = "a";
+
+                bool session = true;
                 ///1.Query Db using dapper to find matching user
                 //eg. SELECT userId, company, firstname, lastname, email, usertype
                 //From users table
@@ -28,7 +32,7 @@ namespace CompliXnceWebApp.Backend.Services.UserServices
                 //var session = new Usersession
 
 
-                //return session;
+                return session;
 
                 //
             }
