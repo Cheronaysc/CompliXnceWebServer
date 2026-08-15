@@ -1,4 +1,6 @@
-﻿namespace CompliXnceWebApp.Backend.Models
+﻿using System.ComponentModel.Design;
+
+namespace CompliXnceWebApp.Backend.Models
 {
     // Base User class
     public enum UserType
@@ -15,6 +17,8 @@
     {
         public string FirstName { get; private set; }
         public string LastName { get; private set; }
+
+        public string PasswordHash { get; private set; }
         public string Email { get; private set; }
         public string PhoneNumber { get; private set; }
         public UserType UserType { get;private set; }
@@ -22,6 +26,17 @@
         public bool? IsActive { get; private set; }
 
         public User() { }
+
+        public User(string firstName, string lastName, string email, string phoneNumber, UserType userType)
+        {
+            FirstName = firstName;
+            LastName = lastName;
+            Email = email;
+            PhoneNumber = phoneNumber;
+            UserType = userType;
+            UserStatus = UserStatus.Active;
+            IsActive = true;
+        }
     }
 
     // Inherits from User
@@ -44,11 +59,13 @@
     public class Admin : User
     {
         public int AdminId { get; set; }
+        public int CompanyId { get; private set; }
         public Admin() { }
 
-        public Admin(int AdminId) : base()
+        public Admin(string firstName, string lastName, string email, string phoneNumber, int companyId)
+            : base(firstName, lastName, email, phoneNumber, UserType.Admin)
         {
-            this.AdminId = AdminId;
+            CompanyId = companyId;
         }
 
 

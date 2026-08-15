@@ -110,8 +110,22 @@
         <p class="mb-0">© 2026 AutoGovernance9. All rights reserved.</p>
     </footer>
 
-
-
-
-
 </div>
+
+
+
+
+
+
+@code {
+    private bool showRegisterModal = false;
+
+    private void OpenRegisterModal() => showRegisterModal = true;
+    private void CloseRegisterModal() => showRegisterModal = false;
+
+    private void SelectRole(string role)
+    {
+
+    }
+}
+
