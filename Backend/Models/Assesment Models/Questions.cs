@@ -1,5 +1,6 @@
-﻿namespace CompliXnceWebApp.Backend.Models
+﻿namespace AutoGovernance9Web.Backend.Models
 {
+
     public enum Framework
     {
         COBIT2019,

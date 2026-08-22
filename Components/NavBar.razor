@@ -1,66 +1,29 @@
 ﻿@rendermode InteractiveServer
+@using AutoGovernance9Web.Backend.Services.UserServices
+@inject NavigationManager NavManager
+@inject AuthenticationService AuthService
 
 <nav class="navbar navbar-expand-lg navbar-dark custom-navbar sticky-top">
     <div class="container">
         <a class="navbar-brand fw-bold" href="/">AutoGovernance9</a>
-
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
-
         <div class="collapse navbar-collapse" id="navMenu">
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="#" @onclick="OpenRegisterModal" @onclick:preventDefault="true">
-                        Register
-                    </a>
                 </li>
                 <li class="nav-item"><a class="nav-link" href="/features">Features</a></li>
-                <li class="nav-item">
-                </li>
+                <li class =" nav-item"><a class="nav-link" href="/login">Log In</a></li>
+                <li class="nav-item"> <a class="nav-link" href="/SignUp">Sign Up</a></li>
             </ul>
         </div>
     </div>
 </nav>
 
-@if (showRegisterModal)
-{
-    <div class="modal-backdrop-custom" @onclick="CloseRegisterModal">
-        <div class="modal-box" @onclick:stopPropagation="true">
-            <h5 class="mb-1">Register as</h5>
-
-            <button class="role-option" @onclick='() => SelectRole("admin")'>
-                <span class="role-icon">🛡️</span>
-                <span>
-                    <span class="role-title">Admin</span>
-                    <span class="role-desc">Register Company, Manage assessments and users</span>
-                </span>
-            </button>
-
-            <button class="role-option" @onclick='() => SelectRole("employee")'>
-                <span class="role-icon">👤</span>
-                <span>
-                    <span class="role-title">Employee</span>
-                    <span class="role-desc">Complete assigned assessments</span>
-                </span>
-            </button>
-
-            <button class="btn btn-link text-secondary w-100 mt-2" @onclick="CloseRegisterModal">
-                Cancel
-            </button>
-        </div>
-    </div>
-}
 
 
 @code {
-    private bool showRegisterModal = false;
-
-    private void OpenRegisterModal() => showRegisterModal = true;
-    private void CloseRegisterModal() => showRegisterModal = false;
-
-    private void SelectRole(string role)
-    {
-        //
+   
+ 
     }
-}

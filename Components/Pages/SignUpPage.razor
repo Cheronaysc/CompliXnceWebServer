@@ -1,0 +1,245 @@
+﻿@page "/signup"
+@using AutoGovernance9Web.Backend.Models
+@using AutoGovernance9Web.Backend.Services.UserServices
+@inject AuthenticationService authenticationService
+@rendermode InteractiveServer
+
+<div class="page-container py-5" style="background-color: #121013; min-height: 100vh;">
+    <div class="container">
+        <!-- Main Titles -->
+        <h4 class="text-purple-glow fw-bold text-center mb-2">Governance Faster. <span class="text-purple" style="color: #a855f7;">Maturity Smarter.</span></h4>
+        <h2 class="text-center mb-5 text-white fw-bold">Choose Your Account Type</h2>
+
+  
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-5 my-9">
+                <div class="card h-100 p-4 bg-dark text-white border-secondary shadow-sm role-card cursor-pointer"
+                     role="button"
+                     tabindex="0"
+                     style="background-color: #1a161d !important; transition: transform 0.2s, border-color 0.2s;"
+                     @onclick='() => OpenAdminModal("Admin")'>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center py-4">
+                        <i class="bi bi-shield-lock-fill display-4 text-purple-glow mb-3" style="color: #a855f7;"></i>
+                        <h3 class="card-title h4 text-white fw-bold">Sign Up as Admin</h3>
+                        <p class="card-text text-secondary mt-2 text-center">Full administrative access, user management, and system reports.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-5 my-9">
+                <div class="card h-100 p-4 bg-dark text-white border-secondary shadow-sm role-card cursor-pointer"
+                     role="button"
+                     tabindex="0"
+                     style="background-color: #1a161d !important; transition: transform 0.2s, border-color 0.2s;"
+                     @onclick='() => OpenEmployeeModal("Employee")'>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center py-4">
+                        <i class="bi bi-person-badge-fill display-4 text-purple-glow mb-3" style="color: #a855f7;"></i>
+                        <h3 class="card-title h4 text-white fw-bold">Sign Up as Employee</h3>
+                        <p class="card-text text-secondary mt-2 text-center">Access your workspace, submit tasks, and track performance.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (isAdminModalOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.85); backdrop-filter: blur(4px);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-secondary shadow-lg" style="background-color: #1a161d !important;">
+                <div class="modal-header border-secondary border-opacity-50">
+                    <h5 class="modal-title fw-bold text-white">Sign Up as <span style="color: #a855f7;">@selectedRole</span></h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-secondary small mb-4">Enter your details below to set up your <strong>@selectedRole</strong> account.</p>
+
+                    @if (!string.IsNullOrEmpty(formError))
+                    {
+                        <div class="alert alert-danger small">@formError</div>
+                    }
+                    @if (!string.IsNullOrEmpty(formSuccess))
+                    {
+                        <div class="alert alert-success small">@formSuccess</div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(formError))
+                    {
+                        <div class="alert alert-danger small">@formError</div>
+                    }
+                    @if (!string.IsNullOrEmpty(formSuccess))
+                    {
+                        <div class="alert alert-success small">@formSuccess</div>
+                    }
+
+                    <form>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small text-secondary fw-semibold">Given Name</label>
+                                <input type="text" class="form-control bg-dark border-secondary text-white py-2" placeholder="John" style="background-color: #121013 !important;" @bind="signupRequest.FirstName" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-secondary fw-semibold">Surname</label>
+                                <input type="text" class="form-control bg-dark border-secondary text-white py-2" placeholder="Doe" style="background-color: #121013 !important;" @bind="signupRequest.LastName" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-secondary fw-semibold">Email Address</label>
+                            <input type="email" class="form-control bg-dark border-secondary text-white py-2" placeholder="name@company.com" style="background-color: #121013 !important;" @bind="signupRequest.Email" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-secondary fw-semibold">Password</label>
+                            <input type="password" class="form-control bg-dark border-secondary text-white py-2" placeholder="••••••••" style="background-color: #121013 !important;" @bind="signupRequest.Password" />
+                        </div>
+                    </form>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small text-secondary fw-semibold text-purple-glow">Company name</label>
+                    <input type="text" class="form-control bg-dark border-secondary text-white py-2" placeholder="Acme Ltd" style="background-color: #121013 !important;" @bind="signupRequest.CompanyName" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small text-secondary fw-semibold text-purple-glow">Create a company key</label>
+                    <input type="text" class="form-control bg-dark border-secondary text-white py-2" placeholder="EG. KMP-4567" style="background-color: #121013 !important;" @bind="signupRequest.CompanyKey" />
+                </div>
+
+
+                <div class="modal-footer border-secondary border-opacity-50 p-3">
+                    <button type="button" class="btn btn-outline-secondary text-light px-3" @onclick="CloseModal">Cancel</button>
+                    <button type="button" class="btn text-white fw-semibold px-4" style="background-color: #a855f7;" @onclick="@(()=> HandleSignUpRequest(UserType.Admin))">
+                        CreateAccount<i class="bi bi-arrow-right ms-1"></i
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (isEmployeeModalOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.85); backdrop-filter: blur(4px);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-secondary shadow-lg" style="background-color: #1a161d !important;">
+                <div class="modal-header border-secondary border-opacity-50">
+                    <h5 class="modal-title fw-bold text-white">Sign Up as <span style="color: #a855f7;">@selectedRole</span></h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-secondary small mb-4">Enter your details below to set up your <strong>@selectedRole</strong> account.</p>
+
+                    <form>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small text-secondary fw-semibold">Given Name</label>
+                                <input type="text" class="form-control bg-dark border-secondary text-white py-2" placeholder="John" style="background-color: #121013 !important;" @bind="signupRequest.FirstName" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-secondary fw-semibold">Surname</label>
+                                <input type="text" class="form-control bg-dark border-secondary text-white py-2" placeholder="Doe" style="background-color: #121013 !important;" @bind="signupRequest.LastName" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-secondary fw-semibold">Email Address</label>
+                            <input type="email" class="form-control bg-dark border-secondary text-white py-2" placeholder="name@company.com" style="background-color: #121013 !important;" @bind="signupRequest.Email" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-secondary fw-semibold">Password</label>
+                            <input type="password" class="form-control bg-dark border-secondary text-white py-2" placeholder="••••••••" style="background-color: #121013 !important;" @bind="signupRequest.Password" />
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer border-secondary border-opacity-50 p-3">
+                    <button type="button" class="btn btn-outline-secondary text-light px-3" @onclick="CloseModal">Cancel</button>
+                    <button type="button" class="btn text-white fw-semibold px-4" style="background-color: #a855f7;" @onclick="@(()=> HandleSignUpRequest(UserType.Employee))">
+                        CreateAccount<i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code{
+    [Inject] NavigationManager NavManager { get; set; }
+
+    private SignupRequest signupRequest = new();
+    private string companyName = string.Empty;
+    private string companyKey = string.Empty;
+    private string formError = string.Empty;
+    private string formSuccess = string.Empty;
+
+    private async Task HandleSignUpRequest(UserType userType)
+    {
+        formError = string.Empty;
+        formSuccess = string.Empty;
+        signupRequest.UserType = userType;
+
+        try
+        {
+
+            var result = await authenticationService.RegisterAdminAsync(signupRequest);
+            if (result == null)
+            {
+                formSuccess = "Registration successful. Redirecting to login...";
+                NavManager.NavigateTo("/login");
+            }
+            else
+            {
+                formError = result;
+            }
+        }
+        catch (Exception ex)
+        {
+            formError = $"Registration failed. Please try again. {ex.Message}";
+            Console.WriteLine(ex.Message);
+              
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public bool isAdminModalOpen = false;
+    public bool isEmployeeModalOpen = false;
+    private string selectedRole = string.Empty;
+
+
+    private void OpenEmployeeModal(string role)
+    {
+        selectedRole = role;
+        isEmployeeModalOpen = true;
+    }
+
+    private void OpenAdminModal(string role)
+    {
+        selectedRole = role;
+        isAdminModalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        isAdminModalOpen = false;
+
+    }
+
+    private void NavigateToCompanyRegistration()
+    {
+        NavManager.NavigateTo("/WelcomeAdmin");
+    }
+}

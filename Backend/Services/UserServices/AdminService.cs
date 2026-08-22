@@ -1,6 +1,6 @@
-﻿using CompliXnceWebApp.Backend.Dtos;
+﻿using AutoGovernance9Web.Backend.Dtos;
 
-namespace CompliXnceWebApp.Backend.Services.UserServices
+namespace AutoGovernance9Web.Backend.Services.UserServices
 {
     public class AdminService
     {

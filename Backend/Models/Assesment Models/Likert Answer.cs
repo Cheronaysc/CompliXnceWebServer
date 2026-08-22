@@ -1,4 +1,4 @@
-﻿namespace CompliXnceWebApp.Backend.Models.Assesment_Models
+﻿namespace AutoGovernance9Web.Backend.Models.Assesment_Models
 {
     public class LikertAnswer
     {

@@ -1,17 +1,20 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace CompliXnceWebApp.Backend.Services.UserServices
+namespace AutoGovernance9Web.Backend.Services.UserServices
 {
-    //use a dto for log ins
-    public class LogInDto
+    namespace AutoGovernance9Web.Backend.Dtos
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
-
-        public LogInDto() { }
+        public class UserLoginDto
+        {
+            public int UserId { get; set; }
+            public int CompanyId { get; set; }
+            public string FirstName { get; set; } = string.Empty;
+            public string LastName { get; set; } = string.Empty;
+            public string Email { get; set; } = string.Empty;
+            public string PasswordHash { get; set; } = string.Empty;
+            public string UserType { get; set; } = string.Empty;
+        }
     }
-
-
     public class UserSession
     {
         public int UserId { get; set; }
@@ -31,7 +34,5 @@ namespace CompliXnceWebApp.Backend.Services.UserServices
             Email = string.Empty;
             UserType = string.Empty;
         }
-
-
     }
 }

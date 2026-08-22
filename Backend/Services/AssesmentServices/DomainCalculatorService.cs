@@ -1,4 +1,4 @@
-﻿namespace CompliXnceWebApp.Backend.Services.AssesmentServices
+﻿namespace AutoGovernance9Web.Backend.Services.AssesmentServices
 {
     public class DomainCalculatorService
     {

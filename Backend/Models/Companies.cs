@@ -1,4 +1,4 @@
-﻿namespace CompliXnceWebApp.Backend.Models
+﻿namespace AutoGovernance9Web.Backend.Models
 {
     public class Company
     {

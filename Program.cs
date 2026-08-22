@@ -1,11 +1,16 @@
-using CompliXnceWebApp.Components;
+using AutoGovernance9Web.Backend.Data;
+using AutoGovernance9Web.Backend.Services.UserServices;
+using AutoGovernance9Web.Components;
+using Microsoft.AspNetCore.Connections;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-
+builder.Services.AddScoped<IDbConnectionInterface, SqlConnectionInterface>();
+builder.Services.AddScoped<AuthenticationService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

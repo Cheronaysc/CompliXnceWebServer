@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.Design;
 
-namespace CompliXnceWebApp.Backend.Models
+namespace AutoGovernance9Web.Backend.Models
 {
     // Base User class
     public enum UserType
@@ -13,6 +13,35 @@ namespace CompliXnceWebApp.Backend.Models
         Active,
         Terminated,
     }
+
+    public class SignupRequest
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+
+        public string Password { get; set; }
+        public string Email { get; set; }
+        public string PhoneNumber { get; set; }
+        public UserType UserType { get; set; }
+        public int? CompanyId { get; set; }
+
+        public string CompanyName { get; set; }
+
+        public string CompanyKey { get; set; }
+
+        public SignupRequest() { }
+
+        public SignupRequest(string firstName, string lastName, string email, string phoneNumber, UserType userType, int? companyId = null)
+        {
+            FirstName = firstName;
+            LastName = lastName;
+            Email = email;
+            PhoneNumber = phoneNumber;
+            UserType = userType;
+            CompanyId = companyId;
+        }
+    }
+
     public abstract class User
     {
         public string FirstName { get; private set; }

@@ -1,7 +1,6 @@
-﻿
-using CompliXnceWebApp.Backend.Models;
+﻿using AutoGovernance9Web.Backend.Models;
 
-namespace CompliXnceWebApp.Backend.Dtos
+namespace AutoGovernance9Web.Backend.Dtos
 
 {
     public class CreateTemplateDto

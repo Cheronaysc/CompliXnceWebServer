@@ -1,41 +1,91 @@
-﻿using CompliXnceWebApp.Backend.Services.UserServices;
+﻿using AutoGovernance9Web.Backend.Data;
+using AutoGovernance9Web.Backend.Dtos;
+using AutoGovernance9Web.Backend.Models;
+using AutoGovernance9Web.Backend.Services.UserServices;
+using AutoGovernance9Web.Backend.Services.UserServices.AutoGovernance9Web.Backend.Dtos;
+using AutoGovernance9Web.Components.Pages;
+using BCrypt;
+using Dapper;
+using Microsoft.AspNetCore.Connections;
 using System.Security.Cryptography.X509Certificates;
-namespace CompliXnceWebApp.Backend.Services.UserServices
+namespace AutoGovernance9Web.Backend.Services.UserServices
+
 {
     public class AuthenticationService
     {
+        private readonly IDbConnectionInterface _connection;
+        private readonly UserSession _userSession;
 
-
-
-        public bool RegisterNewUser()
+        public AuthenticationService(IDbConnectionInterface connection)
         {
-            return true;
+            _connection = connection;
         }
-        
 
-        public async Task<bool> AuthenticateUser(LogInDto logInDto) 
+
+
+        public async Task<string?> RegisterAdminAsync(SignupRequest signupRequest)
         {
+            using var conn = _connection.CreateConnection();
+
+            using var transaction = conn.BeginTransaction();
+            try
             {
+                var emailExists = await conn.ExecuteScalarAsync<int>(
+                    "SELECT COUNT(1) FROM Users WHERE Email = @email",
+                    new { email = signupRequest.Email },
+                    transaction);
 
-                bool session = true;
-                ///1.Query Db using dapper to find matching user
-                //eg. SELECT userId, company, firstname, lastname, email, usertype
-                //From users table
-                //Where Email = @Email And Password = @Password
+                if (emailExists > 0)
+                {
+                    return "That email is already registered. Please sign in.";
+                }
 
-                // = wait (async) QueryFirstOrDefaultAsync <usr> (sql and log in dto)
+                var passwordHash = BCrypt.Net.BCrypt.HashPassword(signupRequest.Password);
 
-                ///2.Check if user was found
-                //if userRecord == null exc
+                // Insert Company
+                var companySql = @"
+            INSERT INTO Companies (CompanyName, CompanyKey)
+            OUTPUT INSERTED.CompanyId
+            VALUES (@CompanyName, @CompanyKey);";
 
-                ///3.Create and start new session
-                //var session = new Usersession
+                var companyId = await conn.ExecuteScalarAsync<int>(
+                    companySql,
+                    new { CompanyName = signupRequest.CompanyName, CompanyKey = signupRequest.CompanyKey },
+                    transaction);
 
+                // Insert User
+                var userSql = @"
+            INSERT INTO Users (FirstName, LastName, Email, PasswordHash, UserType, CompanyId)
+            VALUES (@FirstName, @LastName, @Email, @PasswordHash, @UserType, @CompanyId);";
 
-                return session;
+                var newUserParams = new
+                {
+                    FirstName = signupRequest.FirstName,
+                    LastName = signupRequest.LastName,
+                    Email = signupRequest.Email,
+                    PasswordHash = passwordHash,
+                    UserType = signupRequest.UserType,
+                    CompanyId = companyId
+                };
 
-                //
+                await conn.ExecuteAsync(userSql, newUserParams, transaction);
+
+                transaction.Commit();
+                return null; // success
             }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                Console.WriteLine($"[RegisterAdmin Error]: {ex.Message}");
+                return $"Registration failed: {ex.Message}";
+            }
+
+
+
         }
     }
-}
+
+
+}?@
+
+

@@ -1,6 +1,6 @@
-﻿using CompliXnceWebApp.Backend.Models;
+﻿using AutoGovernance9Web.Backend.Models;
 
-namespace CompliXnceWebApp.Backend.Repository
+namespace AutoGovernance9Web.Backend.Repository
 {
     public class QuestionRepositorycs
     {

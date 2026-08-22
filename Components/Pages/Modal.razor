@@ -1,0 +1,73 @@
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components
+
+@* Minimal Modal component to satisfy SignUpPage usage. Implements ShowAsync/HideAsync, HeaderTemplate and BodyTemplate parameters, Size, IsScrollable and custom Class. *@
+
+@if (isVisible)
+{
+	<div class="modal-backdrop show"></div>
+	<div class="modal d-block @BackdropExtraClass" tabindex="-1" style="display:block;">
+		<div class="modal-dialog @SizeClass @ScrollClass">
+			<div class="modal-content @Class">
+				@if (HeaderTemplate is not null)
+				{
+					<div class="modal-header">
+						@HeaderTemplate
+					</div>
+				}
+				<div class="modal-body">
+					@if (BodyTemplate is not null)
+					{
+						@BodyTemplate
+					}
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+@code {
+	private bool isVisible;
+
+	[Parameter]
+	public RenderFragment? HeaderTemplate { get; set; }
+
+	[Parameter]
+	public RenderFragment? BodyTemplate { get; set; }
+
+	[Parameter]
+	public AutoGovernance9Web.Components.Pages.ModalSize Size { get; set; } = AutoGovernance9Web.Components.Pages.ModalSize.Medium;
+
+	[Parameter]
+	public bool IsScrollable { get; set; }
+
+	[Parameter]
+	public string? Class { get; set; }
+
+	// Exposed for @ref
+	public Task ShowAsync()
+	{
+		isVisible = true;
+		StateHasChanged();
+		return Task.CompletedTask;
+	}
+
+	public Task HideAsync()
+	{
+		isVisible = false;
+		StateHasChanged();
+		return Task.CompletedTask;
+	}
+
+	private string SizeClass => Size switch
+	{
+		ModalSize.Small => "modal-sm",
+		ModalSize.Large => "modal-lg",
+		_ => string.Empty,
+	};
+
+	private string ScrollClass => IsScrollable ? "modal-dialog-scrollable" : string.Empty;
+
+	// Additional backdrop class placeholder (could be used for styling)
+	private string BackdropExtraClass => string.Empty;
+}

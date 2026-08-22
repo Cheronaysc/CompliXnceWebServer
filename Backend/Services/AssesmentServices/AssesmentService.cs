@@ -1,6 +1,6 @@
-﻿using CompliXnceWebApp.Backend.Models;
-using CompliXnceWebApp.Backend.Models.Assesment_Models;
-namespace CompliXnceWebApp.Backend.Services.AssesmentServices
+﻿using AutoGovernance9Web.Backend.Models;
+using AutoGovernance9Web.Backend.Models.Assesment_Models;
+namespace AutoGovernance9Web.Backend.Services.AssesmentServices
 {
     public class AssesmentService
     {
