@@ -110,7 +110,7 @@
 
                 <div class="modal-footer border-secondary border-opacity-50 p-3">
                     <button type="button" class="btn btn-outline-secondary text-light px-3" @onclick="CloseModal">Cancel</button>
-                    <button type="button" class="btn text-white fw-semibold px-4" style="background-color: #a855f7;" @onclick="@(()=> HandleSignUpRequest(UserType.Admin))">
+                    <button type="button" class="btn text-white fw-semibold px-4" style="background-color: #a855f7;" @onclick="@(()=> HandleAdminSignUpRequest(UserType.Admin))">
                         CreateAccount<i class="bi bi-arrow-right ms-1"></i
                     </button>
                 </div>
@@ -152,12 +152,18 @@
                             <label class="form-label small text-secondary fw-semibold">Password</label>
                             <input type="password" class="form-control bg-dark border-secondary text-white py-2" placeholder="••••••••" style="background-color: #121013 !important;" @bind="signupRequest.Password" />
                         </div>
+
+                          <div class="mb-3">
+                            <label class="form-label small text-secondary fw-semibold">Company Key</label>
+                               <label class="form-label small text-secondary ">Unique company password set by your administrator</label>
+                            <input type="password" class="form-control bg-dark border-secondary text-white py-2" placeholder="••••••••" style="background-color: #121013 !important;" @bind="signupRequest.CompanyKey" />
+                        </div>
                     </form>
                 </div>
 
                 <div class="modal-footer border-secondary border-opacity-50 p-3">
                     <button type="button" class="btn btn-outline-secondary text-light px-3" @onclick="CloseModal">Cancel</button>
-                    <button type="button" class="btn text-white fw-semibold px-4" style="background-color: #a855f7;" @onclick="@(()=> HandleSignUpRequest(UserType.Employee))">
+                    <button type="button" class="btn text-white fw-semibold px-4" style="background-color: #a855f7;" @onclick="@(()=> HandleEmployeeSignUpRequest(UserType.Employee))">
                         CreateAccount<i class="bi bi-arrow-right ms-1"></i>
                     </button>
                 </div>
@@ -175,7 +181,7 @@
     private string formError = string.Empty;
     private string formSuccess = string.Empty;
 
-    private async Task HandleSignUpRequest(UserType userType)
+    private async Task HandleAdminSignUpRequest(UserType userType)
     {
         formError = string.Empty;
         formSuccess = string.Empty;
@@ -199,21 +205,37 @@
         {
             formError = $"Registration failed. Please try again. {ex.Message}";
             Console.WriteLine(ex.Message);
-              
+
         }
     }
 
+    private async Task HandleEmployeeSignUpRequest(UserType userType)
+    {
+         formError = string.Empty;
+        formSuccess = string.Empty;
+        signupRequest.UserType = userType;
 
+        try
+        {
 
+            var result = await authenticationService.RegisterEmployeeAsync(signupRequest);
+            if (result == null)
+            {
+                formSuccess = "Registration successful. Redirecting to login...";
+                NavManager.NavigateTo("/login");
+            }
+            else
+            {
+                formError = result;
+            }
+        }
+        catch (Exception ex)
+        {
+            formError = $"Registration failed. Please try again. {ex.Message}";
+            Console.WriteLine(ex.Message);
 
-
-
-
-
-
-
-
-
+        }
+    }
 
     public bool isAdminModalOpen = false;
     public bool isEmployeeModalOpen = false;
@@ -238,8 +260,4 @@
 
     }
 
-    private void NavigateToCompanyRegistration()
-    {
-        NavManager.NavigateTo("/WelcomeAdmin");
-    }
 }

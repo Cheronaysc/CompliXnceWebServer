@@ -41,6 +41,21 @@ namespace AutoGovernance9Web.Backend.Models
             CompanyId = companyId;
         }
     }
+    public class LoginRequest
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+
+        public int UserType { get; set; }
+
+        public LoginRequest() { }
+
+        public LoginRequest(string email, string password, int userType)
+        {
+            Email = email;
+            Password = password;
+        }
+    }
 
     public abstract class User
     {

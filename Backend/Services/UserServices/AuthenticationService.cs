@@ -8,7 +8,9 @@ using BCrypt;
 using Dapper;
 using Microsoft.AspNetCore.Connections;
 using System.Security.Cryptography.X509Certificates;
+using AutoGovernance9Web.Backend.Services;
 namespace AutoGovernance9Web.Backend.Services.UserServices
+
 
 {
     public class AuthenticationService
@@ -16,9 +18,10 @@ namespace AutoGovernance9Web.Backend.Services.UserServices
         private readonly IDbConnectionInterface _connection;
         private readonly UserSession _userSession;
 
-        public AuthenticationService(IDbConnectionInterface connection)
+        public AuthenticationService(IDbConnectionInterface connection, UserSession userSession)
         {
             _connection = connection;
+            _userSession = userSession;
         }
 
 
@@ -64,7 +67,7 @@ namespace AutoGovernance9Web.Backend.Services.UserServices
                     LastName = signupRequest.LastName,
                     Email = signupRequest.Email,
                     PasswordHash = passwordHash,
-                    UserType = signupRequest.UserType,
+                    UserType = signupRequest.UserType.ToString(),
                     CompanyId = companyId
                 };
 
@@ -83,9 +86,107 @@ namespace AutoGovernance9Web.Backend.Services.UserServices
 
 
         }
+
+        public async Task<string?> RegisterEmployeeAsync(SignupRequest signupRequest)
+        {
+            using var conn = _connection.CreateConnection();
+
+            using var transaction = conn.BeginTransaction();
+            try
+            {
+                var emailExists = await conn.ExecuteScalarAsync<int>(
+                    "SELECT COUNT(1) FROM Users WHERE Email = @email",
+                    new { email = signupRequest.Email },
+                    transaction);
+
+                if (emailExists > 0)
+                {
+                    return "That email is already registered. Please sign in.";
+                }
+
+                var passwordHash = BCrypt.Net.BCrypt.HashPassword(signupRequest.Password);
+
+                //look up company
+                var companyId = await conn.ExecuteScalarAsync<int?>(
+                    "SELECT CompanyId FROM Companies WHERE CompanyKey = @CompanyKey",
+                    new { CompanyKey = signupRequest.CompanyKey },
+                    transaction);
+
+                if (companyId == null)
+                {
+                    return "No company found with that company key. Please ask your admin for a key.";
+                }
+
+                // Insert User
+                var userSql = @"
+            INSERT INTO Users (FirstName, LastName, Email, PasswordHash, UserType, CompanyId)
+            VALUES (@FirstName, @LastName, @Email, @PasswordHash, @UserType, @CompanyId);";
+
+                var newUserParams = new
+                {
+                    FirstName = signupRequest.FirstName,
+                    LastName = signupRequest.LastName,
+                    Email = signupRequest.Email,
+                    PasswordHash = passwordHash,
+                    UserType = signupRequest.UserType.ToString(),
+                    CompanyId = companyId
+                };
+
+                await conn.ExecuteAsync(userSql, newUserParams, transaction);
+
+                transaction.Commit();
+                return null; // success
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                Console.WriteLine($"[RegisterAdmin Error]: {ex.Message}");
+                return $"Registration failed: {ex.Message}";
+            }
+
+
+        }
+
+        public async Task<string?> LoginAsync(LoginRequest loginRequest)
+        {
+            using var conn = _connection.CreateConnection();
+
+            try
+            {
+                var user = await conn.QuerySingleOrDefaultAsync<UserLoginDto>(
+                    "SELECT UserId, CompanyId, FirstName, LastName, Email, PasswordHash, UserType FROM Users WHERE Email = @email",
+                    new { email = loginRequest.Email });
+
+                if (user == null)
+                {
+                    return "Invalid email or password.";
+                }
+
+                var passwordValid = BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash);
+
+                if (!passwordValid)
+                {
+                    return "Invalid email or password.";
+                }
+
+                //apply logged in user to new user session
+                _userSession.UserId = user.UserId;
+                _userSession.CompanyId = user.CompanyId;
+                _userSession.FullName = $"{user.FirstName} {user.LastName}";
+                _userSession.Email = user.Email;
+                _userSession.UserType = user.UserType;
+    
+                return null; // success
+            }
+            catch (Exception ex)
+            {
+                return "Login failed. Please try again.";
+            }
+        }
+
     }
+}
 
 
-}?@
 
 

@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <Folder Include="Backend\Models\User Models\" />
-    <Folder Include="Components\Pages\Admin\" />
   </ItemGroup>
 
   <ItemGroup>

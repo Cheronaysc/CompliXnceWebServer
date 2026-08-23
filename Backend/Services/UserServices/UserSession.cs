@@ -26,6 +26,11 @@ namespace AutoGovernance9Web.Backend.Services.UserServices
 
         public bool IsAuthorised => UserId > 0;
 
+
+
+        public UserSession() { }
+
+
         public void EndSession()
         {
             UserId = 0;

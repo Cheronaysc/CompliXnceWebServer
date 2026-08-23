@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddScoped<IDbConnectionInterface, SqlConnectionInterface>();
 builder.Services.AddScoped<AuthenticationService>();
+builder.Services.AddScoped<UserSession>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
