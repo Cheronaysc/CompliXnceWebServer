@@ -1,0 +1,379 @@
+﻿@page "/createassessment"
+@using AutoGovernance9Web.Backend.Models
+@using AutoGovernance9Web.Backend.Dtos
+@using AutoGovernance9Web.Backend.Services.UserServices
+@using AutoGovernance9Web.Backend.Services.AssesmentServices
+@inject NavigationManager Navigation
+@inject AdminService adminService
+@inject QuestionService questionService
+@rendermode InteractiveServer
+
+<div class="questionnaire-theme min-vh-100 py-4 text-light">
+    <div class="container">
+
+        <div class="glass-card p-4 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h3 class="fw-bold mb-1">Create Questionnaire Template</h3>
+                <p class="text-secondary small mb-0">Select exactly 4 questions per domain to assemble a 20-question audit template.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge badge-purple-glow px-3 py-2 fs-6">
+                    Selected: @selectedQuestionIds.Count / 20
+                </span>
+            </div>
+        </div>
+
+        <!-- Inputs for template information -->
+        <div class="glass-card p-4 mb-4">
+            <h5 class="fw-bold mb-3 text-purple-glow">Template Information</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label text-light-muted">Template Title</label>
+                    <input type="text" class="form-control dark-input" placeholder="e.g., Annual Governance & Strategy Audit" @bind="templateTitle" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-light-muted">Description</label>
+                    <input type="text" class="form-control dark-input" placeholder="Brief description for employees..." @bind="templateDescription" />
+                </div>
+            </div>
+        </div>
+
+        <!-- domain tracker to count current selected domains -->
+        <div class="row g-3 mb-4">
+            @foreach (Domain domain in Enum.GetValues(typeof(Domain)))
+            {
+                var count = GetSelectedCountForDomain(domain);
+                var isComplete = count == 4;
+                <div class="col-12 col-md">
+                    <div class="domain-card p-3 text-center @(isComplete ? "domain-complete" : "")">
+                        <small class="text-secondary d-block text-truncate mb-1">@FormatDomainName(domain)</small>
+                        <span class="fw-bold fs-4 @(isComplete ? "text-purple-glow" : "text-white")">
+                            @count <span class="fs-6 text-secondary">/ 4</span>
+                        </span>
+                        <div class="progress-track mt-2">
+                            <div class="progress-fill" style="width: @(count * 25)%;"></div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert dark-alert alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                <div>@errorMessage</div>
+                <button type="button" class="btn-close btn-close-white ms-auto" @onclick="() => errorMessage = null"></button>
+            </div>
+        }
+
+        <!-- Question List -->
+        <div class="glass-card mb-4 bg-off-black">
+            <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                <table class="table dark-table align-middle mb-0">
+                    <thead class="sticky-top">
+                        <tr>
+                            <th style="width: 60px;" class="text-center text-light-muted">Select</th>
+                            <th style="width: 50px;">#</th>
+                            <th>Question Text</th>
+                            <th style="width: 140px;">Framework</th>
+                            <th style="width: 200px;">Domain</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var q in questionBank)
+                        {
+                            var isSelected = selectedQuestionIds.Contains(q.QuestionId);
+                            var domainCount = GetSelectedCountForDomain(q.Domain);
+                            var isDisabled = !isSelected && (domainCount >= 4 || selectedQuestionIds.Count >= 20);
+
+                            <tr class="@(isSelected ? "row-selected" : "") @(isDisabled ? "row-disabled" : "")">
+                                <td class="text-center text-light-muted">
+                                    <input class="form-check-input custom-checkbox"
+                                           type="checkbox"
+                                           checked="@isSelected"
+                                           disabled="@isDisabled"
+                                           @onchange="(e) => ToggleQuestion(q, e.Value is bool b && b)" />
+                                </td>
+                                <td class="text-light-muted font-monospace">@q.QuestionNumber</td>
+                                <td class="question-text">@q.QuestionText</td>
+                                <td>
+                                    <span class="badge framework-badge">@q.Framework</span>
+                                </td>
+                                <td>
+                                    <span class="badge domain-tag @GetBadgeClass(q.Domain)">
+                                        @FormatDomainName(q.Domain)
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- sav -->
+        <div class="glass-card p-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="text-secondary small d-flex align-items-center gap-2">
+                <span class="dot-indicator @(IsTemplateValid() ? "bg-purple" : "bg-secondary")"></span>
+                @if (IsTemplateValid())
+                {
+                    <span class="text-purple-glow">Requirements fulfilled! Ready to save.</span>
+                }
+                else
+                {
+                    <span>Ensure exactly 4 questions are selected for each of the 5 domains.</span>
+                }
+            </div>
+            <button class="btn btn-purple-glow px-4 py-2"
+                    disabled="@(!IsTemplateValid() || isSubmitting)"
+                    @onclick="SaveTemplate">
+                @(isSubmitting ? "Saving..." : "Publish Template")
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* CSS styling */
+    .questionnaire-theme {
+        background-color: #15121a;
+    }
+
+    .glass-card {
+        background-color: #1e1a24;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+    }
+
+    .domain-card {
+        background-color: #1e1a24;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+    }
+
+        .domain-card.domain-complete {
+            border-color: #a855f7;
+        }
+
+    .progress-track {
+        background-color: #2e2933;
+        height: 6px;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        background-color: #a855f7;
+        height: 100%;
+    }
+
+    .dark-table {
+        background-color: transparent;
+        color: #e5e5e5;
+    }
+
+        .dark-table thead th {
+            background-color: #1e1a24;
+            color: #a3a3a3;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dark-table tbody tr {
+            background-color: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+            .dark-table tbody tr.row-selected {
+                background-color: rgba(168, 85, 247, 0.12);
+            }
+
+            .dark-table tbody tr.row-disabled {
+                opacity: 0.4;
+            }
+
+    .badge-purple-glow {
+        background-color: rgba(168, 85, 247, 0.2);
+        color: #d8b4fe;
+        border: 1px solid rgba(168, 85, 247, 0.4);
+    }
+
+    .btn-purple-glow {
+        background-color: #a855f7;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+    }
+
+        .btn-purple-glow:hover {
+            background-color: #9333ea;
+            color: #fff;
+        }
+
+        .btn-purple-glow:disabled {
+            background-color: #4a4453;
+            color: #a3a3a3;
+        }
+
+    .text-purple-glow {
+        color: #d8b4fe;
+    }
+
+    .dot-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+        .dot-indicator.bg-purple {
+            background-color: #a855f7;
+        }
+
+    .framework-badge {
+        background-color: #2e2933;
+        color: #e5e5e5;
+    }
+
+    .domain-tag {
+        font-size: 0.75rem;
+    }
+
+    .dark-alert {
+        background-color: #2e2933;
+        color: #e5e5e5;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+
+    /* CSS additions for form inputs */
+    .dark-input {
+        background-color: #27232b;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+
+        .dark-input:focus {
+            background-color: #2e2933;
+            border-color: #a855f7;
+            color: #fff;
+            box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+        }
+
+    /* white text for questions*/
+    .question-text {
+        color: #ffffff !important;
+        font-weight: 500;
+    }
+</style>
+
+@code {
+    //questions should be seeded directly in sql
+    private List<Question> questionBank = new();
+    private HashSet<int> selectedQuestionIds = new();
+    private string? errorMessage;
+    private string templateTitle = string.Empty;
+    private string templateDescription = string.Empty;
+    private bool isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        //load questions stored in sql
+        questionBank = await questionService.GetAllQuestionsAsync();
+    }
+
+    //enforce that only 4 questions per domain can be checked
+    private void ToggleQuestion(Question question, bool isChecked)
+    {
+        errorMessage = null;
+
+        if (isChecked)
+        {
+            if (GetSelectedCountForDomain(question.Domain) >= 4)
+            {
+                errorMessage = $"Limit reached. You can only select up to 4 questions for {FormatDomainName(question.Domain)}.";
+                return;
+            }
+
+            if (selectedQuestionIds.Count >= 20)
+            {
+                errorMessage = "Template complete: You have already selected 20 total questions.";
+                return;
+            }
+
+            selectedQuestionIds.Add(question.QuestionId);
+        }
+        else
+        {
+            selectedQuestionIds.Remove(question.QuestionId);
+        }
+    }
+
+    private int GetSelectedCountForDomain(Domain domain)
+    {
+        return questionBank
+            .Where(q => q.Domain == domain && selectedQuestionIds.Contains(q.QuestionId))
+            .Count();
+    }
+
+    // re-enforce 4 questions per domain
+    private bool IsTemplateValid()
+    {
+        if (string.IsNullOrWhiteSpace(templateTitle)) return false;
+
+        var domains = Enum.GetValues(typeof(Domain)).Cast<Domain>();
+        return domains.All(d => GetSelectedCountForDomain(d) == 4);
+    }
+
+    private async Task SaveTemplate()
+    {
+        if (!IsTemplateValid())
+        {
+            errorMessage = "Please enter a title and select exactly 4 questions per domain.";
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            var dto = new AssessmentTemplateDto
+            {
+                UserId = 1, // placeholderuser id come back to this
+                TemplateTitle = templateTitle,
+                Description = templateDescription,
+                QuestionIds = selectedQuestionIds.ToList()
+            };
+
+            int templateId = await adminService.CreateTemplateAsync(dto);
+            Navigation.NavigateTo("/templates");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to save template: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private string FormatDomainName(Domain domain) => domain switch
+    {
+        Domain.GovernanceAndStrategy => "Governance & Strategy",
+        Domain.RiskManagement => "Risk Management",
+        Domain.SDLCAndChangeManagement => "SDLC & Change Mgmt",
+        Domain.EmployeeSatisfaction => "Employee Satisfaction",
+        Domain.Ethics => "Ethics",
+        _ => domain.ToString()
+    };
+
+    private string GetBadgeClass(Domain domain) => domain switch
+    {
+        Domain.GovernanceAndStrategy => "bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25",
+        Domain.RiskManagement => "bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25",
+        Domain.SDLCAndChangeManagement => "bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25",
+        Domain.EmployeeSatisfaction => "bg-info bg-opacity-25 text-info border border-info border-opacity-25",
+        Domain.Ethics => "bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25",
+        _ => "bg-secondary"
+    };
+}

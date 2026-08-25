@@ -1,7 +1,10 @@
 using AutoGovernance9Web.Backend.Data;
+using AutoGovernance9Web.Backend.Models;
+using AutoGovernance9Web.Backend.Dtos;
 using AutoGovernance9Web.Backend.Services.UserServices;
 using AutoGovernance9Web.Components;
 using Microsoft.AspNetCore.Connections;
+using AutoGovernance9Web.Backend.Services.AssesmentServices;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +15,9 @@ builder.Services.AddRazorComponents()
 builder.Services.AddScoped<IDbConnectionInterface, SqlConnectionInterface>();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<UserSession>();
+builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<QuestionService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

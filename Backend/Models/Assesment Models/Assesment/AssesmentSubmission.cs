@@ -2,8 +2,8 @@
 {
     public class AssesmentSubmission
     {
+        //actual instance of a completed assesment
         public int AssesmentSubmissionId { get; set; }
-        public int CompanyId { get; set; }
         public int UserId { get; set; }
         public int TemplateId { get; set; }
         public bool IsFinalised { get; set; }
