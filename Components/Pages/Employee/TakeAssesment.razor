@@ -1,0 +1,350 @@
+﻿@page "/takeassessment"
+@using AutoGovernance9Web.Backend.Models
+@using AutoGovernance9Web.Backend.Dtos
+@using AutoGovernance9Web.Backend.Services.UserServices
+@using AutoGovernance9Web.Backend.Services.AssesmentServices
+@using AutoGovernance9Web.Backend.Services.UserServices
+@inject NavigationManager Navigation
+@inject AssessmentService assessmentService
+@inject EmployeeService employeeService
+@rendermode InteractiveServer
+
+<div class="questionnaire-theme min-vh-100 py-4 text-light">
+    <div class="container">
+
+        <!-- Top Bar -->
+        <div class="glass-card p-4 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h3 class="fw-bold mb-1">@(assessmentTemplate?.TemplateTitle ?? "Take Assessment")</h3>
+                <p class="text-secondary small mb-0">@(assessmentTemplate?.Description ?? "Please answer all questions below on a scale from 1 (Strongly Disagree) to 5 (Strongly Agree).")</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge badge-purple-glow px-3 py-2 fs-6">
+                    Progress: @userAnswers.Count / @(questions.Count > 0 ? questions.Count : 20)
+                </span>
+            </div>
+        </div>
+
+        <!-- Progress Track -->
+        <div class="glass-card p-3 mb-4">
+            <div class="d-flex justify-content-between text-secondary small mb-2">
+                <span>Completion Status</span>
+                <span>@GetProgressPercentage()%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" style="width: @(GetProgressPercentage())%;"></div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert dark-alert alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                <div>@errorMessage</div>
+                <button type="button" class="btn-close btn-close-white ms-auto" @onclick="() => errorMessage = null"></button>
+            </div>
+        }
+
+        @if (isLoading)
+        {
+            <div class="glass-card p-5 text-center my-4">
+                <div class="spinner-border text-purple-glow mb-3" role="status"></div>
+                <p class="text-secondary mb-0">Loading latest assessment...</p>
+            </div>
+        }
+        else if (questions == null || questions.Count == 0)
+        {
+            <div class="glass-card p-5 text-center my-4">
+                <i class="bi bi-folder-x fs-1 text-secondary mb-2"></i>
+                <h5 class="text-white">No Active Assessment Found</h5>
+                <p class="text-secondary small">Please check back later or contact your administrator.</p>
+            </div>
+        }
+        else
+        {
+            <!-- Questions List -->
+            <div class="d-flex flex-column gap-3 mb-4">
+                @for (int i = 0; i < questions.Count; i++)
+                {
+                    var index = i;
+                    var q = questions[index];
+                    var isAnswered = userAnswers.ContainsKey(q.QuestionId);
+                    var selectedScore = isAnswered ? userAnswers[q.QuestionId] : (int?)null;
+
+                    <div class="glass-card p-4 @(isAnswered ? "card-answered" : "")">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge framework-badge">Q@(index + 1)</span>
+                                <span class="badge domain-tag @GetBadgeClass(q.Domain)">
+                                    @FormatDomainName(q.Domain)
+                                </span>
+                            </div>
+                            <span class="badge framework-badge">@q.Framework</span>
+                        </div>
+
+                        <h6 class="question-text mb-4">@q.QuestionText</h6>
+
+                        <!-- 5-Point Likert Scale -->
+                        <div class="likert-container">
+                            <div class="likert-labels text-secondary small mb-2 d-flex justify-content-between">
+                                <span>1 - Strongly Disagree</span>
+                                <span>3 - Neutral</span>
+                                <span>5 - Strongly Agree</span>
+                            </div>
+                            <div class="row g-2">
+                                @for (int score = 1; score <= 5; score++)
+                                {
+                                    var val = score;
+                                    <div class="col">
+                                        <button type="button"
+                                                class="btn likert-btn w-100 @(selectedScore == val ? "selected" : "")"
+                                                @onclick="() => SelectLikertScore(q.QuestionId, val)">
+                                            <span class="fw-bold">@val</span>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="glass-card p-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="text-secondary small d-flex align-items-center gap-2">
+                    <span class="dot-indicator @(IsComplete() ? "bg-purple" : "bg-secondary")"></span>
+                    @if (IsComplete())
+                    {
+                        <span class="text-purple-glow">All questions answered! Ready to submit.</span>
+                    }
+                    else
+                    {
+                        <span>Answered @userAnswers.Count of @questions.Count questions.</span>
+                    }
+                </div>
+                <button class="btn btn-purple-glow px-4 py-2"
+                        disabled="@(!IsComplete() || isSubmitting)"
+                        @onclick="SubmitAssessment">
+                    @(isSubmitting ? "Submitting..." : "Submit Assessment")
+                </button>
+            </div>
+        }
+
+    </div>
+</div>
+
+<style>
+    .questionnaire-theme {
+        background-color: #15121a;
+    }
+
+    .glass-card {
+        background-color: #1e1a24;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        transition: border-color 0.2s ease-in-out;
+    }
+
+        .glass-card.card-answered {
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+    .progress-track {
+        background-color: #2e2933;
+        height: 6px;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        background-color: #a855f7;
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+
+    .badge-purple-glow {
+        background-color: rgba(168, 85, 247, 0.2);
+        color: #d8b4fe;
+        border: 1px solid rgba(168, 85, 247, 0.4);
+    }
+
+    .btn-purple-glow {
+        background-color: #a855f7;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+    }
+
+        .btn-purple-glow:hover {
+            background-color: #9333ea;
+            color: #fff;
+        }
+
+        .btn-purple-glow:disabled {
+            background-color: #4a4453;
+            color: #a3a3a3;
+        }
+
+    .text-purple-glow {
+        color: #d8b4fe;
+    }
+
+    .dot-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+        .dot-indicator.bg-purple {
+            background-color: #a855f7;
+        }
+
+    .framework-badge {
+        background-color: #2e2933;
+        color: #e5e5e5;
+    }
+
+    .domain-tag {
+        font-size: 0.75rem;
+    }
+
+    .dark-alert {
+        background-color: #2e2933;
+        color: #e5e5e5;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+
+    .question-text {
+        color: #ffffff !important;
+        font-weight: 500;
+        font-size: 1.05rem;
+        line-height: 1.5;
+    }
+
+    /* Likert Selector Styling */
+    .likert-btn {
+        background-color: #27232b;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #a3a3a3;
+        padding: 0.6rem 0;
+        border-radius: 8px;
+        transition: all 0.2s ease-in-out;
+    }
+
+        .likert-btn:hover {
+            background-color: #322b38;
+            border-color: rgba(168, 85, 247, 0.5);
+            color: #fff;
+        }
+
+        .likert-btn.selected {
+            background-color: rgba(168, 85, 247, 0.25);
+            border-color: #a855f7;
+            color: #d8b4fe;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+        }
+</style>
+
+@code {
+    private AssessmentTemplateDto? assessmentTemplate;
+    private List<Question> questions = new();
+    private Dictionary<int, int> userAnswers = new();
+    private string? errorMessage;
+    private bool isLoading = true;
+    private bool isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // get latest assessment template from admin service
+            assessmentTemplate = await assessmentService.GetLatestTemplateAsync();
+
+            if (assessmentTemplate != null)
+            {
+                questions = await assessmentService.GetQuestionsForTemplateAsync(assessmentTemplate.TemplateId);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load assessment: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SelectLikertScore(int questionId, int score)
+    {
+        userAnswers[questionId] = score;
+    }
+
+    private int GetProgressPercentage()
+    {
+        if (questions.Count == 0) return 0;
+        return (int)Math.Round((double)userAnswers.Count / questions.Count * 100);
+    }
+
+    private bool IsComplete()
+    {
+        return questions.Count > 0 && userAnswers.Count == questions.Count;
+    }
+
+    private async Task SubmitAssessment()
+    {
+        if (!IsComplete())
+        {
+            errorMessage = "Please answer all questions before submitting.";
+            return;
+        }
+
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            var submissionDto = new AssessmentSubmissionDto
+            {
+                UserId = 1, // Placeholder user ID
+                TemplateId = assessmentTemplate!.TemplateId,
+                Answers = userAnswers.Select(kv => new LikertAnswerDto
+                {
+                    QuestionId = kv.Key,
+                    LikertScore = kv.Value
+                }).ToList()
+            };
+
+            await employeeService.SubmitAssessmentAsync(submissionDto);
+            Navigation.NavigateTo("/employeedashboard");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Submission failed: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private string FormatDomainName(Domain domain) => domain switch
+    {
+        Domain.GovernanceAndStrategy => "Governance & Strategy",
+        Domain.RiskManagement => "Risk Management",
+        Domain.SDLCAndChangeManagement => "SDLC & Change Mgmt",
+        Domain.EmployeeSatisfaction => "Employee Satisfaction",
+        Domain.Ethics => "Ethics",
+        _ => domain.ToString()
+    };
+
+    private string GetBadgeClass(Domain domain) => domain switch
+    {
+        Domain.GovernanceAndStrategy => "bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25",
+        Domain.RiskManagement => "bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25",
+        Domain.SDLCAndChangeManagement => "bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25",
+        Domain.EmployeeSatisfaction => "bg-info bg-opacity-25 text-info border border-info border-opacity-25",
+        Domain.Ethics => "bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25",
+        _ => "bg-secondary"
+    };
+}

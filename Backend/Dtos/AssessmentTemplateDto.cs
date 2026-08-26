@@ -3,7 +3,7 @@
 namespace AutoGovernance9Web.Backend.Dtos
 
 {
-    //questions shall not be seeded to the db, they act only as part of an assesment template
+
     public class AssessmentTemplateDto
     {
         public int UserId { get; set; }

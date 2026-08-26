@@ -11,9 +11,13 @@
 
         public LikertAnswer() { }
 
-        public LikertAnswer(int AnswerId, int AssesmentId, int QuestionId, int ScaleValue, string? Comment)
+        public LikertAnswer(int answerId, int assessmentSubmissionId, int questionId, int scaleValue, string? comment = null)
         {
-
+            AnswerId = answerId;
+            AssessmentSubmissionId = assessmentSubmissionId;
+            QuestionId = questionId;
+            ScaleValue = scaleValue;
+            Comment = comment;
         }
     }
 }

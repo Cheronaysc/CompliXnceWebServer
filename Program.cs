@@ -17,6 +17,8 @@ builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<UserSession>();
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<QuestionService>();
+builder.Services.AddScoped<AssessmentService>();
+builder.Services.AddScoped<EmployeeService>();
 
 var app = builder.Build();
 

@@ -1,10 +1,15 @@
 ﻿@page "/employeedashboard"
+@using AutoGovernance9Web.Backend.Dtos
+@using AutoGovernance9Web.Backend.Services.AssesmentServices
+@inject AssessmentService assessmentService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
 @inject NavigationManager navigationManager
 
 <nav class="navbar navbar-expand-lg border-bottom border-secondary border-opacity-25 py-3" style="background-color: #1a161d;">
     <div class="container-fluid px-4">
         <a class="navbar-brand text-white fw-bold d-flex align-items-center gap-2" href="/employeedashboard">
-            <i class="bi bi-shield-check text-purple-glow" style="color: #a855f7;"></i>
+            <i class="bi bi-shield-check" style="color: #a855f7;"></i>
             <span>AutoGovernance<span style="color: #a855f7;">9</span></span>
             <span class="badge bg-dark border border-secondary text-secondary ms-2 small" style="font-size: 0.7rem;">EMPLOYEE</span>
         </a>
@@ -23,10 +28,11 @@
 <div class="page-container py-4" style="background-color: #121013; min-height: calc(100vh - 65px);">
     <div class="container-fluid px-4">
 
+        <!-- Top Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h3 class="text-white fw-bold mb-1">My Dashboard</h3>
-                <p class="text-secondary small mb-0">Track your pending assessments</p>
+                <p class="text-secondary small mb-0">Track your pending assessments and maturity metrics</p>
             </div>
         </div>
 
@@ -37,7 +43,7 @@
                     <div>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Overall Maturity Level</span>
-                            <h4 class="text-purple-glow large fw-semibold text-uppercase mb-0" style="color: #a855f7; letter-spacing: 0.5px;">Level 4</h4>
+                            <h4 class="large fw-semibold text-uppercase mb-0" style="color: #a855f7; letter-spacing: 0.5px;">Level 4</h4>
                         </div>
                         <p class="text-secondary small fw-normal mb-0">Complete assessments to help calculate your business's maturity!</p>
                     </div>
@@ -74,9 +80,60 @@
             </div>
         </div>
 
-        <!-- Main dashboard mirroring admins -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-4 col-lg-2-4">
+        <!-- Proposed Assessments Section (Nested container removed) -->
+        <div class="card border-secondary shadow-sm p-4 mb-4" style="background-color: #1a161d !important;">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-clipboard-check fs-5" style="color: #a855f7;"></i>
+                <h5 class="text-white fw-bold mb-0">Proposed Assessments</h5>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="d-flex justify-content-center py-4">
+                    <div class="spinner-border text-purple-glow" style="color: #a855f7;" role="status"></div>
+                </div>
+            }
+            else if (proposedAssessments == null || !proposedAssessments.Any())
+            {
+                <div class="p-4 rounded border border-secondary border-opacity-25 text-center py-4" style="background-color: #121013;">
+                    <i class="bi bi-check-circle-fill text-success fs-3 mb-2 d-block"></i>
+                    <h6 class="text-white mb-1">You're All Caught Up!</h6>
+                    <p class="text-secondary small mb-0">There are no pending proposed assessments for you right now.</p>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var template in proposedAssessments)
+                    {
+                        <div class="assessment-card p-3 rounded border border-secondary border-opacity-50 d-flex justify-content-between align-items-center flex-wrap gap-3" style="background-color: #121013;">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="p-3 rounded-circle d-flex align-items-center justify-content-center" style="background: rgba(168, 85, 247, 0.1); color: #a855f7;">
+                                    <i class="bi bi-file-earmark-text fs-4"></i>
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <h6 class="text-white fw-bold mb-0">@template.TemplateTitle</h6>
+                                    </div>
+                                    <p class="text-secondary small mb-2">@template.Description</p>
+                                    <span class="text-secondary small" style="font-size: 0.75rem;">
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-purple px-4 py-2 fw-semibold d-flex align-items-center gap-2" @onclick="() => StartAssessment(template.TemplateId)">
+                                <span>Take Assessment</span>
+                                <i class="bi bi-arrow-right"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Main Dashboard domain rings, update to single row ->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-5 g-3">
+            <div class="col">
                 <div class="card h-100 p-3 border-secondary shadow-sm text-center d-flex flex-column align-items-center justify-content-between" style="background-color: #1a161d !important;">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="bi bi-bank fs-5" style="color: #a855f7;"></i>
@@ -92,7 +149,7 @@
                 </div>
             </div>
 
-            <div class="col-md-4 col-lg-2-4">
+            <div class="col">
                 <div class="card h-100 p-3 border-secondary shadow-sm text-center d-flex flex-column align-items-center justify-content-between" style="background-color: #1a161d !important;">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="bi bi-diagram-3 fs-5" style="color: #06b6d4;"></i>
@@ -108,7 +165,7 @@
                 </div>
             </div>
 
-            <div class="col-md-4 col-lg-2-4">
+            <div class="col">
                 <div class="card h-100 p-3 border-secondary shadow-sm text-center d-flex flex-column align-items-center justify-content-between" style="background-color: #1a161d !important;">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="bi bi-tools fs-5" style="color: #10b981;"></i>
@@ -120,11 +177,11 @@
                             <span class="text-secondary d-block mt-1" style="font-size: 0.65rem;">/ 5.0</span>
                         </div>
                     </div>
-                    <p class="text-secondary small mb-0" style="font-size: 0.75rem;">Resource Optimization??? </p>
+                    <p class="text-secondary small mb-0" style="font-size: 0.75rem;">Resource Optimization</p>
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-2-4">
+            <div class="col">
                 <div class="card h-100 p-3 border-secondary shadow-sm text-center d-flex flex-column align-items-center justify-content-between" style="background-color: #1a161d !important;">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="bi bi-headset fs-5" style="color: #f59e0b;"></i>
@@ -140,7 +197,7 @@
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-2-4">
+            <div class="col">
                 <div class="card h-100 p-3 border-secondary shadow-sm text-center d-flex flex-column align-items-center justify-content-between" style="background-color: #1a161d !important;">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="bi bi-check2-circle fs-5" style="color: #f43f5e;"></i>
@@ -157,65 +214,11 @@
             </div>
         </div>
 
-        <!-- Recent assesments -->
-        <div class="card border-secondary shadow-sm p-4" style="background-color: #1a161d !important;">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="text-white fw-bold mb-0">Assessment History</h6>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-dark table-hover mb-0 align-middle" style="--bs-table-bg: transparent;">
-                    <thead class="text-secondary border-bottom border-secondary border-opacity-50 small">
-                        <tr>
-                            <th>Assessment Name</th>
-                            <th>Status</th>
-                            <th style="width: 200px;">Progress</th>
-                            <th class="text-end">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="border-0">
-                        <tr>
-                            <td class="fw-semibold text-white">{assessment name}</td>
-                            <td><span class="badge bg-warning bg-opacity-25 text-warning border border-warning">Pending</span></td>
-                            <td>
-                                <div class="progress bg-dark" style="height: 6px;">
-                                    <div class="progress-bar" style="width: 0%; background-color: #a855f7;"></div>
-                                </div>
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-sm text-white px-3" style="background-color: #a855f7;" @onclick="StartAssessment">Start</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="fw-semibold text-white">Audit 2</td>
-                            <td><span class="badge bg-success bg-opacity-25 text-success border border-success">In Progress</span></td>
-                            <td>
-                                <div class="progress bg-dark" style="height: 6px;">
-                                    <div class="progress-bar" style="width: 65%; background-color: #a855f7;"></div>
-                                </div>
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-dark text-white border-secondary px-3" @onclick="StartAssessment">Continue</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="fw-semibold text-white">Audit 1</td>
-                            <td><span class="badge bg-dark border border-secondary text-light">Completed</span></td>
-                            <td>
-                                <div class="progress bg-dark" style="height: 6px;">
-                                    <div class="progress-bar" style="width: 100%; background-color: #a855f7;"></div>
-                                </div>
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-dark text-secondary border-secondary px-3" disabled>View</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
     </div>
 </div>
+       
+
+       
 <style>
     /* CSS Ring Layout */
     .progress-ring {
@@ -263,6 +266,29 @@
 </style>
 
 @code {
+
+
+    private List<AssessmentTemplateDto> proposedAssessments = new();
+    private bool isLoading = true;
+    private int currentUserId = 1; // Replace with logged-in user ID from your Auth State
+
+     protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            proposedAssessments = await assessmentService.GetProposedAssessmentsForUserAsync(currentUserId);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void StartAssessment(int templateId)
+    {
+        Navigation.NavigateTo($"/takeassessment?templateId={templateId}");
+    }
+
     private void NavigateToAssigned()
     {
         navigationManager.NavigateTo("/viewassessment");
