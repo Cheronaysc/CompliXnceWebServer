@@ -28,8 +28,21 @@ namespace AutoGovernance9Web.Backend.Services.UserServices
 
             try
             {
-                string insertSubmissionSql = @" INSERT INTO AssessmentSubmissions (TemplateId) VALUES (@TemplateId);
-                    SELECT CAST(SCOPE_IDENTITY() as int);";
+                //Revoke permission of an employee trying to take the same assessment twice
+                string alreadySubmittedSql = @" SELECT COUNT(1) FROM AssessmentSubmissions WHERE UserId = @UserId AND TemplateId = @TemplateId AND IsFinalised = 1;";
+
+                int existingCount = await conn.ExecuteScalarAsync<int>(
+                    alreadySubmittedSql,
+                    new { dto.UserId, dto.TemplateId },
+                    transaction);
+
+                if (existingCount > 0)
+                {
+                    throw new InvalidOperationException("You have already submitted this assessment.");
+                }
+
+                string insertSubmissionSql = @" INSERT INTO AssessmentSubmissions (UserId, TemplateId, IsFinalised, CompletedAt) VALUES (@UserId, @TemplateId, 1, GETUTCDATE());
+                SELECT CAST(SCOPE_IDENTITY() as int);";
 
                 int submissionId = await conn.ExecuteScalarAsync<int>(
                     insertSubmissionSql,

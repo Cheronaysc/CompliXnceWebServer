@@ -73,7 +73,7 @@ namespace AutoGovernance9Web.Backend.Services.AssesmentServices
         WHERE t.TemplateId NOT IN (
             SELECT s.TemplateId 
             FROM AssessmentSubmissions s 
-            WHERE s.UserId = @UserId AND s.IsFinalised = 1
+            WHERE s.UserId = @UserId AND (s.IsFinalised = 1 OR s.Status = 'Completed')
         )
         ORDER BY t.CreatedAt DESC;";
 
@@ -160,7 +160,16 @@ namespace AutoGovernance9Web.Backend.Services.AssesmentServices
             await conn.ExecuteAsync(completeAssessment, new { AssessmentSubmissionId = assessmentSubmissionId });
         }
 
+        public async Task<SubmissionStatusDto?> GetSubmissionStatusAsync(int userId, int templateId)
+        {
+            using var conn = _connection.CreateConnection();
 
+            string sql = @"SELECT TOP 1 AssessmentSubmissionId, IsFinalised, Status FROM AssessmentSubmissions
+            WHERE UserId = @UserId AND TemplateId = @TemplateId
+            ORDER BY AssessmentSubmissionId DESC;";
+
+            return await conn.QueryFirstOrDefaultAsync<SubmissionStatusDto>(sql, new { UserId = userId, TemplateId = templateId });
+        }
 
         public async Task<int> GetTotalSubmissionsCountAsync()
         {
@@ -169,6 +178,26 @@ namespace AutoGovernance9Web.Backend.Services.AssesmentServices
             return await conn.ExecuteScalarAsync<int>(sql);
         }
 
+        public async Task<List<AssessmentSubmissionSummaryDto>> GetSubmissionsForAdminAsync()
+        {
+            using var conn = _connection.CreateConnection();
 
+            string sql = @" SELECT
+            s.AssessmentSubmissionId,
+            s.TemplateId,
+            t.TemplateTitle,
+            s.UserId,
+            (u.FirstName + ' ' + u.LastName) AS EmployeeName,
+            s.IsFinalised,
+            s.Status,
+            s.CompletedAt
+            FROM AssessmentSubmissions s
+            JOIN AssessmentTemplates t ON t.TemplateId = s.TemplateId
+            JOIN Users u ON u.UserId = s.UserId
+            ORDER BY s.CompletedAt DESC;";
+
+            var results = await conn.QueryAsync<AssessmentSubmissionSummaryDto>(sql);
+            return results.ToList();
+        }
     }
 }
