@@ -7,6 +7,8 @@
 @inject NavigationManager Navigation
 @inject AssessmentService assessmentService
 @inject EmployeeService employeeService
+@using Microsoft.AspNetCore.WebUtilities
+@inject IJSRuntime JS
 @rendermode InteractiveServer
 
 <div class="questionnaire-theme min-vh-100 py-4 text-light">
@@ -246,6 +248,7 @@
 </style>
 
 @code {
+    [Inject] AutoGovernance9Web.Backend.Services.UserServices.UserSession userSession { get; set; }
     private AssessmentTemplateDto? assessmentTemplate;
     private List<Question> questions = new();
     private Dictionary<int, int> userAnswers = new();
@@ -257,12 +260,43 @@
     {
         try
         {
-            // get latest assessment template from admin service
-            assessmentTemplate = await assessmentService.GetLatestTemplateAsync();
-
-            if (assessmentTemplate != null)
+            // Check for templateId query parameter
+            var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+            var query = QueryHelpers.ParseQuery(uri.Query);
+            if (query.TryGetValue("templateId", out var templateVals) && int.TryParse(templateVals.FirstOrDefault() ?? string.Empty, out var templateId))
             {
-                questions = await assessmentService.GetQuestionsForTemplateAsync(assessmentTemplate.TemplateId);
+                Console.WriteLine($"[TakeAssessment] Found templateId query param: {templateId}");
+                await JS.InvokeVoidAsync("console.log", $"[TakeAssessment - client] Found templateId query param: {templateId}");
+                assessmentTemplate = await assessmentService.GetTemplateByIdAsync(templateId);
+                if (assessmentTemplate != null)
+                {
+                    Console.WriteLine($"[TakeAssessment] Loaded template: {assessmentTemplate.TemplateId} - {assessmentTemplate.TemplateTitle}");
+                    await JS.InvokeVoidAsync("console.log", $"[TakeAssessment - client] Loaded template: {assessmentTemplate.TemplateId} - {assessmentTemplate.TemplateTitle}");
+                    questions = await assessmentService.GetQuestionsForTemplateAsync(assessmentTemplate.TemplateId);
+                    Console.WriteLine($"[TakeAssessment] Loaded {questions?.Count ?? 0} questions for template {assessmentTemplate.TemplateId}");
+                    await JS.InvokeVoidAsync("console.log", $"[TakeAssessment - client] Loaded {questions?.Count ?? 0} questions for template {assessmentTemplate.TemplateId}");
+                }
+                else
+                {
+                    errorMessage = "Requested assessment template not found.";
+                    Console.WriteLine("[TakeAssessment] Requested assessment template not found for templateId: " + templateId);
+                    await JS.InvokeVoidAsync("console.log", "[TakeAssessment - client] Requested assessment template not found for templateId: " + templateId);
+                }
+            }
+            else
+            {
+                // fallback to latest
+                Console.WriteLine("[TakeAssessment] No templateId query param - falling back to latest template");
+                await JS.InvokeVoidAsync("console.log", "[TakeAssessment - client] No templateId query param - falling back to latest template");
+                assessmentTemplate = await assessmentService.GetLatestTemplateAsync();
+                if (assessmentTemplate != null)
+                {
+                    Console.WriteLine($"[TakeAssessment] Loaded latest template: {assessmentTemplate.TemplateId} - {assessmentTemplate.TemplateTitle}");
+                    await JS.InvokeVoidAsync("console.log", $"[TakeAssessment - client] Loaded latest template: {assessmentTemplate.TemplateId} - {assessmentTemplate.TemplateTitle}");
+                    questions = await assessmentService.GetQuestionsForTemplateAsync(assessmentTemplate.TemplateId);
+                    Console.WriteLine($"[TakeAssessment] Loaded {questions?.Count ?? 0} questions for latest template {assessmentTemplate.TemplateId}");
+                    await JS.InvokeVoidAsync("console.log", $"[TakeAssessment - client] Loaded {questions?.Count ?? 0} questions for latest template {assessmentTemplate.TemplateId}");
+                }
             }
         }
         catch (Exception ex)
@@ -275,9 +309,11 @@
         }
     }
 
-    private void SelectLikertScore(int questionId, int score)
+    private async Task SelectLikertScore(int questionId, int score)
     {
         userAnswers[questionId] = score;
+        Console.WriteLine($"[TakeAssessment] Selected score {score} for QuestionId {questionId}. Total answers: {userAnswers.Count}");
+        await JS.InvokeVoidAsync("console.log", $"[TakeAssessment - client] Selected score {score} for QuestionId {questionId}. Total answers: {userAnswers.Count}");
     }
 
     private int GetProgressPercentage()
@@ -306,7 +342,7 @@
         {
             var submissionDto = new AssessmentSubmissionDto
             {
-                UserId = 1, // Placeholder user ID
+                UserId = userSession?.UserId ?? 0,
                 TemplateId = assessmentTemplate!.TemplateId,
                 Answers = userAnswers.Select(kv => new LikertAnswerDto
                 {
@@ -315,12 +351,23 @@
                 }).ToList()
             };
 
+            Console.WriteLine($"[TakeAssessment] Submitting assessment. UserId={submissionDto.UserId}, TemplateId={submissionDto.TemplateId}, AnswersCount={submissionDto.Answers.Count}");
+            await JS.InvokeVoidAsync("console.log", $"[TakeAssessment - client] Submitting assessment. UserId={submissionDto.UserId}, TemplateId={submissionDto.TemplateId}, AnswersCount={submissionDto.Answers.Count}");
+            // Log a preview of answers (first 10)
+            var preview = string.Join(", ", submissionDto.Answers.Take(10).Select(a => $"(Q{a.QuestionId}: {a.LikertScore})"));
+            Console.WriteLine("[TakeAssessment] Answers preview: " + preview);
+            await JS.InvokeVoidAsync("console.log", "[TakeAssessment - client] Answers preview: " + preview);
+
             await employeeService.SubmitAssessmentAsync(submissionDto);
+            Console.WriteLine("[TakeAssessment] Submission returned successfully.");
+            await JS.InvokeVoidAsync("console.log", "[TakeAssessment - client] Submission returned successfully.");
             Navigation.NavigateTo("/employeedashboard");
         }
         catch (Exception ex)
         {
             errorMessage = $"Submission failed: {ex.Message}";
+            Console.WriteLine($"[TakeAssessment] Submission failed: {ex}");
+            await JS.InvokeVoidAsync("console.error", $"[TakeAssessment - client] Submission failed: {ex.Message}");
         }
         finally
         {

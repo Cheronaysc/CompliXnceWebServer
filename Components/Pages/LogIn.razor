@@ -79,6 +79,8 @@
         try
         {
             var result = await authenticationService.LoginAsync(loginRequest);
+                // Debugging: log result and current user session type to the server console
+                Console.WriteLine($"[Login] result={(result == null ? "success" : "failure: " + result)}, userSession.UserType='{userSession?.UserType ?? "null"}'");
             if (result == null)
             {
                 formSuccess = "Login successful. Redirecting...";
@@ -88,7 +90,8 @@
                 }
                 else
                 {
-                    NavManager.NavigateTo("/employeedashboard");
+                    // Force a full page load for employee dashboard to rule out client-side routing issues
+                    NavManager.NavigateTo("/employeedashboard", forceLoad: true);
                 }
 
             }

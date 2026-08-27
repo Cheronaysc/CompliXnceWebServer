@@ -12,6 +12,7 @@ namespace AutoGovernance9Web.Backend.Services.AssesmentServices
     public class AssessmentService
     {
 
+
         private readonly IDbConnectionInterface _connection;
 
         public AssessmentService(IDbConnectionInterface connection)
@@ -50,6 +51,13 @@ namespace AutoGovernance9Web.Backend.Services.AssesmentServices
             return questions.ToList();
         }
 
+        public async Task<AssessmentTemplateDto?> GetTemplateByIdAsync(int templateId)
+        {
+            using var conn = _connection.CreateConnection();
+            string sql = @"SELECT TemplateId, UserId, TemplateTitle, Description, CreatedAt FROM AssessmentTemplates WHERE TemplateId = @TemplateId;";
+            return await conn.QueryFirstOrDefaultAsync<AssessmentTemplateDto>(sql, new { TemplateId = templateId });
+        }
+
         public async Task<List<AssessmentTemplateDto>> GetProposedAssessmentsForUserAsync(int userId)
         {
             using var conn = _connection.CreateConnection();
@@ -71,6 +79,94 @@ namespace AutoGovernance9Web.Backend.Services.AssesmentServices
 
             var templates = await conn.QueryAsync<AssessmentTemplateDto>(sql, new { UserId = userId });
             return templates.ToList();
+        }
+
+        public async Task<AssessmentScoreResultDto> CalculateAssessmentScoreAsync(int submissionId)
+        {
+            using var conn = _connection.CreateConnection();
+
+            string sql = @" SELECT 
+            d.DomainId,
+            d.DomainName,
+            AVG(CAST(a.ScaleValue AS FLOAT)) AS DomainAverage FROM AssessmentSubmissions s
+            JOIN LikertAnswers a ON s.SubmissionId = a.SubmissionId
+            JOIN Questions q ON a.QuestionId = q.QuestionId
+            JOIN Domain d ON q.DomainId = d.DomainId
+            WHERE s.SubmissionId = @SubmissionId
+            GROUP BY d.DomainId, d.DomainName;";
+
+            var domainResults = (await conn.QueryAsync<DomainScore>(sql, new { SubmissionId = submissionId })).ToList();
+
+            if (!domainResults.Any())
+            {
+                return new AssessmentScoreResultDto();
+            }
+
+            // calculate the final maturity score as the average of all domain averages
+            double finalScore = domainResults.Average(d => d.DomainAverage);
+
+            return new AssessmentScoreResultDto
+            {
+                FinalMaturityScore = Math.Round(finalScore, 2),
+                DomainScores = domainResults
+            };
+        }
+
+        public async Task<AssessmentScoreResultDto> CalculateOrganizationMaturityAsync()
+        {
+            using var conn = _connection.CreateConnection(); 
+            string sql = @"
+        WITH AllDomainScores AS (
+            SELECT 
+                q.Domain AS DomainName,
+                s.AssessmentSubmissionId,
+                AVG(CAST(a.ScaleValue AS FLOAT)) AS SubmissionDomainAverage
+            FROM AssessmentSubmissions s
+            JOIN LikertAnswers a ON s.AssessmentSubmissionId = a.AssessmentSubmissionId
+            JOIN Questions q ON a.QuestionId = q.QuestionId
+            GROUP BY q.Domain, s.AssessmentSubmissionId
+        )
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY DomainName) AS DomainId,
+            DomainName,
+            AVG(SubmissionDomainAverage) AS DomainAverage
+        FROM AllDomainScores
+        GROUP BY DomainName;";
+
+            var domainResults = (await conn.QueryAsync<DomainScore>(sql)).ToList();
+
+            if (!domainResults.Any())
+            {
+                return new AssessmentScoreResultDto();
+            }
+
+            // Average out all the domain averages to get the global enterprise maturity score
+            double finalScore = domainResults.Average(d => d.DomainAverage);
+
+            return new AssessmentScoreResultDto
+            {
+                FinalMaturityScore = Math.Round(finalScore, 2),
+                DomainScores = domainResults
+            };
+        }
+
+        public async Task CompleteAssessmentAsync(int assessmentSubmissionId)
+        {
+            using var conn = _connection.CreateConnection();
+
+            string completeAssessment = @"UPDATE AssessmentSubmissions SET Status = 'Completed' 
+            WHERE AssessmentSubmissionId = @AssessmentSubmissionId;";
+
+            await conn.ExecuteAsync(completeAssessment, new { AssessmentSubmissionId = assessmentSubmissionId });
+        }
+
+
+
+        public async Task<int> GetTotalSubmissionsCountAsync()
+        {
+            using var conn = _connection.CreateConnection();
+            string sql = "SELECT COUNT(*) FROM AssessmentSubmissions;";
+            return await conn.ExecuteScalarAsync<int>(sql);
         }
 
 

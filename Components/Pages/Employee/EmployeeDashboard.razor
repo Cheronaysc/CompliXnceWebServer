@@ -1,6 +1,7 @@
 ﻿@page "/employeedashboard"
 @using AutoGovernance9Web.Backend.Dtos
 @using AutoGovernance9Web.Backend.Services.AssesmentServices
+@using AutoGovernance9Web.Backend.Services.UserServices
 @inject AssessmentService assessmentService
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
@@ -131,7 +132,7 @@
             }
         </div>
 
-        <!-- Main Dashboard domain rings, update to single row ->
+        <!-- Main Dashboard domain rings, update to single row -->
         <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-5 g-3">
             <div class="col">
                 <div class="card h-100 p-3 border-secondary shadow-sm text-center d-flex flex-column align-items-center justify-content-between" style="background-color: #1a161d !important;">
@@ -266,16 +267,17 @@
 </style>
 
 @code {
+    [Inject] UserSession userSession { get; set; }
 
 
     private List<AssessmentTemplateDto> proposedAssessments = new();
     private bool isLoading = true;
-    private int currentUserId = 1; // Replace with logged-in user ID from your Auth State
 
      protected override async Task OnInitializedAsync()
     {
         try
         {
+            var currentUserId = userSession?.UserId ?? 0;
             proposedAssessments = await assessmentService.GetProposedAssessmentsForUserAsync(currentUserId);
         }
         finally
@@ -296,7 +298,7 @@
 
     private void NavigateToHistory()
     {
-        navigationManager.NavigateTo("/assessment-history");
+        navigationManager.NavigateTo("/assessmenthistory");
     }
 
     private void StartAssessment()

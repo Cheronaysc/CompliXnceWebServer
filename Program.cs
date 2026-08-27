@@ -19,6 +19,7 @@ builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<QuestionService>();
 builder.Services.AddScoped<AssessmentService>();
 builder.Services.AddScoped<EmployeeService>();
+builder.Services.AddScoped<AssessmentService>();
 
 var app = builder.Build();
 

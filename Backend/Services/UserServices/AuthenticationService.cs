@@ -175,6 +175,9 @@ namespace AutoGovernance9Web.Backend.Services.UserServices
                 _userSession.FullName = $"{user.FirstName} {user.LastName}";
                 _userSession.Email = user.Email;
                 _userSession.UserType = user.UserType;
+
+                // Debug
+                Console.WriteLine($"[Auth] Logged in user: {user.Email}, UserType: {user.UserType}, UserId: {user.UserId}");
     
                 return null; // success
             }
