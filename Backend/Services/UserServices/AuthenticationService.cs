@@ -23,9 +23,6 @@ namespace AutoGovernance9Web.Backend.Services.UserServices
             _connection = connection;
             _userSession = userSession;
         }
-
-
-
         public async Task<string?> RegisterAdminAsync(SignupRequest signupRequest)
         {
             using var conn = _connection.CreateConnection();
@@ -116,11 +113,10 @@ namespace AutoGovernance9Web.Backend.Services.UserServices
                 {
                     return "No company found with that company key. Please ask your admin for a key.";
                 }
-
+                 
                 // Insert User
-                var userSql = @"
-            INSERT INTO Users (FirstName, LastName, Email, PasswordHash, UserType, CompanyId)
-            VALUES (@FirstName, @LastName, @Email, @PasswordHash, @UserType, @CompanyId);";
+                var userSql = @"  INSERT INTO Users (FirstName, LastName, Email, PasswordHash, UserType, CompanyId)
+                VALUES (@FirstName, @LastName, @Email, @PasswordHash, @UserType, @CompanyId);";
 
                 var newUserParams = new
                 {
@@ -147,7 +143,7 @@ namespace AutoGovernance9Web.Backend.Services.UserServices
 
         }
 
-        public async Task<string?> LoginAsync(LoginRequest loginRequest)
+        public async Task<(UserLoginDto? User, string? ErrorMessage)> LoginAsync(LoginRequest loginRequest)
         {
             using var conn = _connection.CreateConnection();
 
@@ -157,33 +153,16 @@ namespace AutoGovernance9Web.Backend.Services.UserServices
                     "SELECT UserId, CompanyId, FirstName, LastName, Email, PasswordHash, UserType FROM Users WHERE Email = @email",
                     new { email = loginRequest.Email });
 
-                if (user == null)
+                if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
                 {
-                    return "Invalid email or password.";
+                    return (null, "Invalid email or password.");
                 }
 
-                var passwordValid = BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash);
-
-                if (!passwordValid)
-                {
-                    return "Invalid email or password.";
-                }
-
-                //apply logged in user to new user session
-                _userSession.UserId = user.UserId;
-                _userSession.CompanyId = user.CompanyId;
-                _userSession.FullName = $"{user.FirstName} {user.LastName}";
-                _userSession.Email = user.Email;
-                _userSession.UserType = user.UserType;
-
-                // Debug
-                Console.WriteLine($"[Auth] Logged in user: {user.Email}, UserType: {user.UserType}, UserId: {user.UserId}");
-    
-                return null; // success
+                return (user, null);
             }
             catch (Exception ex)
             {
-                return "Login failed. Please try again.";
+                return (null, "Login failed. Please try again.");
             }
         }
 

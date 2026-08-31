@@ -358,7 +358,7 @@
         {
             var submissionDto = new AssessmentSubmissionDto
             {
-                UserId = userSession?.UserId ?? 0,
+                UserId = userSession.UserId,
                 TemplateId = assessmentTemplate!.TemplateId,
                 Answers = userAnswers.Select(kv => new LikertAnswerDto
                 {

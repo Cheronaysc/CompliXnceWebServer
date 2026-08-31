@@ -121,6 +121,7 @@
 
 @if (isEmployeeModalOpen)
 {
+
     <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.85); backdrop-filter: blur(4px);">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white border-secondary shadow-lg" style="background-color: #1a161d !important;">
@@ -131,6 +132,23 @@
                 <div class="modal-body p-4">
                     <p class="text-secondary small mb-4">Enter your details below to set up your <strong>@selectedRole</strong> account.</p>
 
+                      @if (!string.IsNullOrEmpty(formError))
+                    {
+                        <div class="alert alert-danger small">@formError</div>
+                    }
+                    @if (!string.IsNullOrEmpty(formSuccess))
+                    {
+                        <div class="alert alert-success small">@formSuccess</div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(formError))
+                    {
+                        <div class="alert alert-danger small">@formError</div>
+                    }
+                    @if (!string.IsNullOrEmpty(formSuccess))
+                    {
+                        <div class="alert alert-success small">@formSuccess</div>
+                    }
                     <form>
                         <div class="row g-3 mb-3">
                             <div class="col-6">
@@ -205,13 +223,16 @@
         {
             formError = $"Registration failed. Please try again. {ex.Message}";
             Console.WriteLine(ex.Message);
-
+        }
+        finally
+        {
+            StateHasChanged();
         }
     }
 
     private async Task HandleEmployeeSignUpRequest(UserType userType)
     {
-         formError = string.Empty;
+        formError = string.Empty;
         formSuccess = string.Empty;
         signupRequest.UserType = userType;
 
@@ -233,7 +254,10 @@
         {
             formError = $"Registration failed. Please try again. {ex.Message}";
             Console.WriteLine(ex.Message);
-
+        }
+        finally
+        {
+            StateHasChanged();
         }
     }
 

@@ -5,6 +5,7 @@
 @inject NavigationManager navigationManager
 @inject AdminService adminService
 @inject AssessmentService assessmentService
+@inject UserSession userSession
 @rendermode InteractiveServer
 
 <!-- Top Admin Navigation Bar -->
@@ -100,73 +101,29 @@
 
         <h5 class="text-white fw-bold mb-3">Domain Performance Breakdown</h5>
 
-        <!-- Dynamic Domain Performance Rings -->
+        <!-- 2 Top, 3 Bottom Domain Grid layout -->
         @if (orgScoreResult.DomainScores.Any())
         {
             var domains = orgScoreResult.DomainScores.ToList();
-            int index = 1;
 
-            <div class="row g-4 mb-4 justify-content-center">
-                <!-- Top Row: First 3 Domains -->
-                <div class="col-12">
-                    <div class="row row-cols-1 row-cols-md-3 g-3 justify-content-center">
-                        @for (int i = 0; i < Math.Min(3, domains.Count); i++)
-                        {
-                            var domain = domains[i];
-                            double percentage = (domain.DomainAverage / 5.0) * 100;
-                            int ringIndex = i + 1;
-
-                            <div class="col">
-                                <div class="card h-100 p-3 border-secondary shadow-sm text-center d-flex flex-column align-items-center justify-content-between" style="background-color: #1a161d !important;">
-                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                        <i class="bi bi-bank fs-5" style="color: #a855f7;"></i>
-                                        <h6 class="text-white fw-semibold mb-0 small">@domain.DomainName</h6>
-                                    </div>
-
-                                    <div class="progress-ring domain-ring-@ringIndex my-3" style="background: conic-gradient(var(--ring-color-@ringIndex) @percentage%, #2d2633 0);">
-                                        <div class="ring-inner">
-                                            <span class="fw-bold text-white fs-4 lh-1">@domain.DomainAverage.ToString("0.0")</span>
-                                            <span class="text-secondary d-block mt-1" style="font-size: 0.65rem;">/ 5.0</span>
-                                        </div>
-                                    </div>
-
-                                    <p class="text-secondary small mb-0" style="font-size: 0.75rem;">Average Score</p>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </div>
-
-                <!-- Bottom Row: Remaining Domains (e.g., 2 on bottom, centered) -->
-                @if (domains.Count > 3)
+            <div class="domain-grid-custom mb-4">
+                @for (int i = 0; i < domains.Count; i++)
                 {
-                    <div class="col-12">
-                        <div class="row row-cols-1 row-cols-md-2 g-3 justify-content-center" style="max-width: 66%; margin: 0 auto;">
-                            @for (int i = 3; i < domains.Count; i++)
-                            {
-                                var domain = domains[i];
-                                double percentage = (domain.DomainAverage / 5.0) * 100;
-                                int ringIndex = i + 1;
+                    var domain = domains[i];
+                    double percentage = (domain.DomainAverage / 5.0) * 100;
+                    int ringIndex = i + 1;
 
-                                <div class="col">
-                                    <div class="card h-100 p-3 border-secondary shadow-sm text-center d-flex flex-column align-items-center justify-content-between" style="background-color: #1a161d !important;">
-                                        <div class="d-flex align-items-center gap-2 mb-2">
-                                            <i class="bi bi-bank fs-5" style="color: #a855f7;"></i>
-                                            <h6 class="text-white fw-semibold mb-0 small">@domain.DomainName</h6>
-                                        </div>
+                    <div class="domain-box">
+                        <h6 class="text-white fw-semibold mb-3">@domain.DomainName</h6>
 
-                                        <div class="progress-ring domain-ring-@ringIndex my-3" style="background: conic-gradient(var(--ring-color-@ringIndex) @percentage%, #2d2633 0);">
-                                            <div class="ring-inner">
-                                                <span class="fw-bold text-white fs-4 lh-1">@domain.DomainAverage.ToString("0.0")</span>
-                                                <span class="text-secondary d-block mt-1" style="font-size: 0.65rem;">/ 5.0</span>
-                                            </div>
-                                        </div>
-
-                                        <p class="text-secondary small mb-0" style="font-size: 0.75rem;">Average Score</p>
-                                    </div>
-                                </div>
-                            }
+                        <div class="progress-ring ring-color-var-@ringIndex my-2" style="background: conic-gradient(var(--ring-color-@ringIndex) @percentage%, #221c24 0);">
+                            <div class="ring-inner ring-inner-glow-@ringIndex">
+                                <span class="fw-bold text-white fs-3 lh-1">@domain.DomainAverage.ToString("0.0")</span>
+                                <span class="text-secondary d-block mt-1" style="font-size: 0.7rem;">/ 5.0</span>
+                            </div>
                         </div>
+
+                        <p class="text-secondary small mt-3 mb-0" style="font-size: 0.75rem;">//preview text</p>
                     </div>
                 }
             </div>
@@ -175,57 +132,65 @@
         {
             <div class="row mb-4">
                 <div class="col-12 text-center py-4 text-secondary card border-secondary" style="background-color: #1a161d !important;">
-                    <p class="mb-0">No assessment metrics calculated yet. Click "Complete Assessment" to load metrics.</p>
+                    <p class="mb-0">No assessment metrics calculated yet. Click calculation actions to load metrics.</p>
                 </div>
             </div>
         }
 
-
-        </div>
-
-        <!-- Temporary Debug Info Banner -->
-        <div class="alert alert-secondary text-white mb-3" style="background-color: #1a161d; border-color: #a855f7;">
-            <span><strong>Debug Status:</strong> Submissions Count = @totalSubmissionsCount | Final Score = @orgScoreResult.FinalMaturityScore | Domains Loaded = @orgScoreResult.DomainScores.Count</span>
-        </div>
-
-        <!-- Active Assessments Table -->
+        <!-- Active Assessments Table (Real Data) -->
         <div class="card border-secondary shadow-sm p-4" style="background-color: #1a161d !important;">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="text-white fw-bold mb-0">Active Assessment Runs</h6>
             </div>
             <div class="table-responsive">
-                <table class="table table-dark table-hover mb-0 align-middle" style="--bs-table-bg: transparent;">
-                    <thead class="text-secondary border-bottom border-secondary border-opacity-50 small">
-                        <tr>
-                            <th>Assessment Name</th>
-                            <th>Status</th>
-                            <th>Score</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="border-0">
-                        <!-- Example row wired up with your completion trigger -->
-                        <tr>
-                            <td class="fw-semibold text-white">....</td>
-                            <td><span class="badge bg-success bg-opacity-25 text-success border border-success">In Progress</span></td>
-                            <td style="width: 200px;">
-                                <div class="progress bg-dark" style="height: 6px;">
-                                    <div class="progress-bar" style="width: 65%; background-color: #a855f7;"></div>
-                                </div>
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-sm text-white fw-semibold px-3"
-                                        style="background-color: #a855f7;"
-                                        @onclick="() => TriggerScoreCalculation()">
-                                    <i class="bi bi-check-circle me-1"></i> Complete Assessment
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                @if (isLoadingAssessments)
+                {
+                    <div class="d-flex justify-content-center py-4">
+                        <div class="spinner-border text-purple" style="color: #a855f7;" role="status"></div>
+                    </div>
+                }
+                else if (activeRuns == null || !activeRuns.Any())
+                {
+                    <div class="text-center py-4 text-secondary">
+                        <p class="mb-0">No active assessment runs found for your organization.</p>
+                    </div>
+                }
+                else
+                {
+                    <table class="table table-dark table-hover mb-0 align-middle" style="--bs-table-bg: transparent;">
+                        <thead class="text-secondary border-bottom border-secondary border-opacity-50 small">
+                            <tr>
+                                <th>Assessment Name</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-0">
+                            @foreach (var run in activeRuns)
+                            {
+                                <tr>
+                                    <td class="fw-semibold text-white">@run.TemplateTitle</td>
+                                    <td>
+                                        <span class="badge bg-success bg-opacity-25 text-success border border-success">
+                                            @statusString
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm text-white fw-semibold px-3"
+                                                style="background-color: #a855f7;"
+                                                @onclick="() => TriggerScoreCalculation()">
+                                            <i class="bi bi-check-circle me-1"></i> Complete Assessment Run
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
             </div>
         </div>
     </div>
+</div>
 
 <style>
     :root {
@@ -236,62 +201,139 @@
         --ring-color-5: #f43f5e;
     }
 
+    /* Custom 2-top, 3-bottom grid layout */
+    .domain-grid-custom {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 1rem;
+    }
+
+        /* First row: 2 items spanning 3 columns each */
+        .domain-grid-custom > .domain-box:nth-child(1),
+        .domain-grid-custom > .domain-box:nth-child(2) {
+            grid-column: span 3;
+        }
+
+        /* Second row: 3 items spanning 2 columns each */
+        .domain-grid-custom > .domain-box:nth-child(3),
+        .domain-grid-custom > .domain-box:nth-child(4),
+        .domain-grid-custom > .domain-box:nth-child(5) {
+            grid-column: span 2;
+        }
+
+    .domain-box {
+        background-color: #1a161d !important;
+        border: 1px solid var(--bs-secondary);
+        border-radius: 0.375rem;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
     .progress-ring {
-        width: 150px;
-        height: 150px;
-        border-radius: 100%;
+        width: 199px;
+        height: 199px;
+        border-radius: 80%;
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
+    .ring-color-var-1 {
+        box-shadow: 0 0 18px rgba(168, 85, 247, 0.35);
+    }
+
+    .ring-color-var-2 {
+        box-shadow: 0 0 18px rgba(6, 182, 212, 0.35);
+    }
+
+    .ring-color-var-3 {
+        box-shadow: 0 0 18px rgba(16, 185, 129, 0.35);
+    }
+
+    .ring-color-var-4 {
+        box-shadow: 0 0 18px rgba(245, 158, 11, 0.35);
+    }
+
+    .ring-color-var-5 {
+        box-shadow: 0 0 18px rgba(244, 63, 94, 0.35);
+    }
+
     .ring-inner {
-        width: 85px;
-        height: 85px;
-        border-radius: 90%;
+        width: 100px;
+        height: 100px;
+        border-radius: 100%;
         background-color: #1a161d;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
     }
+
+    .ring-inner-glow-1 {
+        box-shadow: inset 0 0 12px rgba(168, 85, 247, 0.4);
+    }
+
+    .ring-inner-glow-2 {
+        box-shadow: inset 0 0 12px rgba(6, 182, 212, 0.4);
+    }
+
+    .ring-inner-glow-3 {
+        box-shadow: inset 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .ring-inner-glow-4 {
+        box-shadow: inset 0 0 12px rgba(245, 158, 11, 0.4);
+    }
+
+    .ring-inner-glow-5 {
+        box-shadow: inset 0 0 12px rgba(244, 63, 94, 0.4);
+    }
 </style>
 
 @code {
     private AssessmentScoreResultDto orgScoreResult = new();
+    private List<AssessmentTemplateDto> activeRuns = new();
     private int totalSubmissionsCount = 0;
+    private bool isLoadingAssessments = true;
     private string? errorMessage = null;
+    private string statusString = "ongoing";
+
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            totalSubmissionsCount = await assessmentService.GetTotalSubmissionsCountAsync();
-            // Automatically calculate initial dashboard metrics on load
-            orgScoreResult = await assessmentService.CalculateOrganizationMaturityAsync();
+            totalSubmissionsCount = await assessmentService.GetTotalSubmissionsCountAsync(userSession.CompanyId);
+            orgScoreResult = await assessmentService.CalculateOrganizationMaturityAsync(userSession.CompanyId);
+
+            // Fetch live assessment templates / active runs for the company context
+            activeRuns = await assessmentService.GetProposedAssessmentsForUserAsync(userSession.UserId, userSession.CompanyId);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Initialization error: {ex.Message}");
         }
+        finally
+        {
+            isLoadingAssessments = false;
+        }
     }
 
-   private async Task TriggerScoreCalculation()
+    private async Task TriggerScoreCalculation()
     {
         try
         {
-            // 1. Fetch total submission volume
-            totalSubmissionsCount = await assessmentService.GetTotalSubmissionsCountAsync();
-
-            // 2. Run the SQL query to crunch domain and overall averages
-            orgScoreResult = await assessmentService.CalculateOrganizationMaturityAsync();
-
-            // 3. Force the UI to update with the new numbers and rings
+            totalSubmissionsCount = await assessmentService.GetTotalSubmissionsCountAsync(userSession.CompanyId);
+            orgScoreResult = await assessmentService.CalculateOrganizationMaturityAsync(userSession.CompanyId);
+            statusString = "complete";
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            errorMessage = ex.Message; // Capture the exact error
+            errorMessage = ex.Message;
             StateHasChanged();
         }
     }

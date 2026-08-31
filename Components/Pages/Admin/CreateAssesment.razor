@@ -4,8 +4,10 @@
 @using AutoGovernance9Web.Backend.Services.UserServices
 @using AutoGovernance9Web.Backend.Services.AssesmentServices
 @inject NavigationManager Navigation
+@inject AssessmentService assessmentService
 @inject AdminService adminService
 @inject QuestionService questionService
+@inject UserSession userSession
 @rendermode InteractiveServer
 
 <div class="questionnaire-theme min-vh-100 py-4 text-light">
@@ -262,7 +264,7 @@
 
     /* white text for questions*/
     .question-text {
-        color: #ffffff !important;
+        color: #1a1a1a !important;
         font-weight: 500;
     }
 </style>
@@ -275,7 +277,6 @@
     private string templateTitle = string.Empty;
     private string templateDescription = string.Empty;
     private bool isSubmitting;
-
     protected override async Task OnInitializedAsync()
     {
         //load questions stored in sql
@@ -327,6 +328,12 @@
 
     private async Task SaveTemplate()
     {
+        if (userSession == null || userSession.UserId <= 0)
+        {
+            errorMessage = "Your session has expired or is invalid. Please log in again.";
+            return;
+        }
+
         if (!IsTemplateValid())
         {
             errorMessage = "Please enter a title and select exactly 4 questions per domain.";
@@ -334,28 +341,37 @@
         }
 
         isSubmitting = true;
+        errorMessage = null;
+
         try
         {
             var dto = new AssessmentTemplateDto
-            {
-                UserId = 1, // placeholderuser id come back to this
-                TemplateTitle = templateTitle,
-                Description = templateDescription,
-                QuestionIds = selectedQuestionIds.ToList()
-            };
+        {
+            UserId = userSession.UserId, 
+            TemplateTitle = templateTitle,
+            Description = templateDescription,
+            QuestionIds = selectedQuestionIds.ToList()
+        };
 
-            int templateId = await adminService.CreateTemplateAsync(dto);
-            Navigation.NavigateTo("/templates");
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Failed to save template: {ex.Message}";
-        }
-        finally
-        {
-            isSubmitting = false;
-        }
+
+            await adminService.CreateTemplateAsync(dto);
+
+            if (userSession.CompanyId > 0)
+            {
+                await assessmentService.ResetOrganizationMaturityAsync(userSession.CompanyId);
+            }
+
+        Navigation.NavigateTo("/admindashboard");
     }
+    catch (Exception ex)
+    {
+        errorMessage = $"Template creation failed: {ex.Message}";
+    }
+    finally
+    {
+        isSubmitting = false;
+    }
+}
 
     private string FormatDomainName(Domain domain) => domain switch
     {

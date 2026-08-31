@@ -70,44 +70,52 @@
     private string formSuccess = string.Empty;
     private bool isSubmitting = false;
 
-    private async Task HandleLoginRequest()
+private async Task HandleLoginRequest()
+{
+    formError = string.Empty;
+    formSuccess = string.Empty;
+    isSubmitting = true;
+
+    try
     {
-        formError = string.Empty;
-        formSuccess = string.Empty;
-        isSubmitting = true;
+        var (user, error) = await authenticationService.LoginAsync(loginRequest);
 
-        try
+        if (error == null && user != null)
         {
-            var result = await authenticationService.LoginAsync(loginRequest);
-                // Debugging: log result and current user session type to the server console
-                Console.WriteLine($"[Login] result={(result == null ? "success" : "failure: " + result)}, userSession.UserType='{userSession?.UserType ?? "null"}'");
-            if (result == null)
-            {
-                formSuccess = "Login successful. Redirecting...";
-                if (string.Equals(userSession.UserType, "Admin", StringComparison.OrdinalIgnoreCase))
-                {
-                    NavManager.NavigateTo("/admindashboard");
-                }
-                else
-                {
-                    // Force a full page load for employee dashboard to rule out client-side routing issues
-                    NavManager.NavigateTo("/employeedashboard", forceLoad: true);
-                }
+         
+            userSession.UserId = user.UserId;
+            userSession.CompanyId = user.CompanyId;
+            userSession.FullName = $"{user.FirstName} {user.LastName}";
+            userSession.Email = user.Email;
+            userSession.UserType = user.UserType;
 
+            Console.WriteLine($"[Login] Success! Assigned UserType: {userSession.UserType}, CompanyId: {userSession.CompanyId}");
+
+            formSuccess = "Login successful. Redirecting...";
+            
+            if (string.Equals(userSession.UserType, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                NavManager.NavigateTo("/admindashboard");
             }
             else
             {
-                formError = result;
+                NavManager.NavigateTo("/employeedashboard");
             }
         }
-        catch (Exception ex)
+        else
         {
-            formError = "Login failed. Please try again.";
-            Console.WriteLine(ex.Message);
+            formError = error ?? "Invalid login.";
         }
-        finally
-        {
-            isSubmitting = false;
-        }
+    }
+    catch (Exception ex)
+    {
+        formError = "Login failed. Please try again.";
+        Console.WriteLine(ex.Message);
+    }
+    finally
+    {
+        isSubmitting = false;
+    }
+}
     }
 }

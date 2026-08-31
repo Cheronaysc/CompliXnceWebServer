@@ -12,7 +12,6 @@ namespace AutoGovernance9Web.Backend.Services.AssesmentServices
     public class AssessmentService
     {
 
-
         private readonly IDbConnectionInterface _connection;
 
         public AssessmentService(IDbConnectionInterface connection)
@@ -58,26 +57,28 @@ namespace AutoGovernance9Web.Backend.Services.AssesmentServices
             return await conn.QueryFirstOrDefaultAsync<AssessmentTemplateDto>(sql, new { TemplateId = templateId });
         }
 
-        public async Task<List<AssessmentTemplateDto>> GetProposedAssessmentsForUserAsync(int userId)
+        public async Task<List<AssessmentTemplateDto>> GetProposedAssessmentsForUserAsync(int userId, int companyId)
         {
             using var conn = _connection.CreateConnection();
 
             string sql = @"
-        SELECT 
+         SELECT 
             t.TemplateId, 
             t.UserId, 
             t.TemplateTitle, 
             t.Description, 
             t.CreatedAt
         FROM AssessmentTemplates t
-        WHERE t.TemplateId NOT IN (
+        JOIN Users u ON t.UserId = u.UserId
+        WHERE u.CompanyId = @CompanyId
+          AND t.TemplateId NOT IN (
             SELECT s.TemplateId 
             FROM AssessmentSubmissions s 
             WHERE s.UserId = @UserId AND (s.IsFinalised = 1 OR s.Status = 'Completed')
         )
         ORDER BY t.CreatedAt DESC;";
 
-            var templates = await conn.QueryAsync<AssessmentTemplateDto>(sql, new { UserId = userId });
+            var templates = await conn.QueryAsync<AssessmentTemplateDto>(sql, new { UserId = userId , CompanyId = companyId });
             return templates.ToList();
         }
 
@@ -112,28 +113,29 @@ namespace AutoGovernance9Web.Backend.Services.AssesmentServices
             };
         }
 
-        public async Task<AssessmentScoreResultDto> CalculateOrganizationMaturityAsync()
+        public async Task<AssessmentScoreResultDto> CalculateOrganizationMaturityAsync(int companyId)
         {
             using var conn = _connection.CreateConnection(); 
-            string sql = @"
-        WITH AllDomainScores AS (
+            string calculateFinal = @" WITH AllDomainScores AS (
             SELECT 
                 q.Domain AS DomainName,
                 s.AssessmentSubmissionId,
                 AVG(CAST(a.ScaleValue AS FLOAT)) AS SubmissionDomainAverage
+
             FROM AssessmentSubmissions s
             JOIN LikertAnswers a ON s.AssessmentSubmissionId = a.AssessmentSubmissionId
-            JOIN Questions q ON a.QuestionId = q.QuestionId
-            GROUP BY q.Domain, s.AssessmentSubmissionId
+            JOIN Questions q ON a.QuestionId = q.QuestionId 
+            JOIN Users u ON s.UserId = u.UserId
+            WHERE u.CompanyId = @CompanyId
+           GROUP BY q.Domain, s.AssessmentSubmissionId
         )
         SELECT 
             ROW_NUMBER() OVER (ORDER BY DomainName) AS DomainId,
             DomainName,
             AVG(SubmissionDomainAverage) AS DomainAverage
-        FROM AllDomainScores
-        GROUP BY DomainName;";
+        FROM AllDomainScores GROUP BY DomainName;";
 
-            var domainResults = (await conn.QueryAsync<DomainScore>(sql)).ToList();
+            var domainResults = (await conn.QueryAsync<DomainScore>(calculateFinal, new { CompanyId = companyId })).ToList();
 
             if (!domainResults.Any())
             {
@@ -171,11 +173,13 @@ namespace AutoGovernance9Web.Backend.Services.AssesmentServices
             return await conn.QueryFirstOrDefaultAsync<SubmissionStatusDto>(sql, new { UserId = userId, TemplateId = templateId });
         }
 
-        public async Task<int> GetTotalSubmissionsCountAsync()
+        public async Task<int> GetTotalSubmissionsCountAsync(int companyId)
         {
             using var conn = _connection.CreateConnection();
-            string sql = "SELECT COUNT(*) FROM AssessmentSubmissions;";
-            return await conn.ExecuteScalarAsync<int>(sql);
+            string sql = @"SELECT COUNT(*) FROM AssessmentSubmissions s
+                    JOIN Users u ON s.UserId = u.UserId
+                    WHERE u.CompanyId = @CompanyId;";
+            return await conn.ExecuteScalarAsync<int>(sql, new { CompanyId = companyId });
         }
 
         public async Task<List<AssessmentSubmissionSummaryDto>> GetSubmissionsForAdminAsync()
@@ -198,6 +202,27 @@ namespace AutoGovernance9Web.Backend.Services.AssesmentServices
 
             var results = await conn.QueryAsync<AssessmentSubmissionSummaryDto>(sql);
             return results.ToList();
+        }
+
+        public async Task ResetOrganizationMaturityAsync(int companyId)
+        {
+            using var conn = _connection.CreateConnection();
+
+     
+            string deleteQuery = @"
+        DELETE a FROM LikertAnswers a
+        JOIN AssessmentSubmissions s ON a.AssessmentSubmissionId = s.AssessmentSubmissionId
+        JOIN Users u ON s.UserId = u.UserId
+        WHERE u.CompanyId = @CompanyId;
+
+        DELETE s FROM AssessmentSubmissions s
+        JOIN Users u ON s.UserId = u.UserId
+        WHERE u.CompanyId = @CompanyId;
+    ";
+
+            //save maturity timestamp
+
+            await conn.ExecuteAsync(deleteQuery, new { CompanyId = companyId });
         }
     }
 }

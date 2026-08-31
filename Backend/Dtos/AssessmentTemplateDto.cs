@@ -11,7 +11,7 @@ namespace AutoGovernance9Web.Backend.Dtos
         public string TemplateTitle { get; set; } = string.Empty;
         public string? Description { get; set; }
         public List<int> QuestionIds { get; set; } = new();
-
+        
         public AssessmentTemplateDto() { }
     }
 }
