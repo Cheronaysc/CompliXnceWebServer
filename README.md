@@ -72,13 +72,17 @@ Target end-user organisation: UK-based SMEs who currently either don't track IT 
 
 ## System Diagrams
 
-**UML Class Diagram** — domain entities and service layer 
+**UML Class Diagram** — domain entities and service layer.
+<img width="1297" height="757" alt="image" src="https://github.com/user-attachments/assets/02da5fa5-5c7f-424f-a66f-f5c111400eee" />
 
-#link
 
-**Entity Relationship Diagram** — SQL Server schema (Company, Users, AssessmentTemplate, Questions, JuncQuestions, AssessmentSubmission, AnsweredQuestions, LikertAnswer):
 
-#link
+
+**Entity Relationship Diagram** 
+<img width="822" height="607" alt="image" src="https://github.com/user-attachments/assets/1ed907bc-56fc-4034-9b56-35217a51725b" />
+
+
+
 
 **User Journey / Process Flow:**
 
