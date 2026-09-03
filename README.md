@@ -68,6 +68,20 @@ Target end-user organisation: UK-based SMEs who currently either don't track IT 
 | R17 | Assessment results stored in SQL Server | Should | ✅ |
 | R18 | Each user's question/answer pairs stored in SQL Server | Won't | ✅ |
 
+### Financial Governance, FinOps & Longitudinal Tracking (v2.0 / In Progress)
+
+| ID | Requirement | Priority | Implemented |
+|---|---|---|---|
+| R19 | Admin can assign simulated currency budgets to specific IT domains/projects | Must | 🟡 (In Dev) |
+| R20 | System calculates domain financial risk exposure based on Likert maturity gaps | Should | 🟡 (In Dev) |
+| R21 | System captures timestamped score snapshots upon assessment period closure | Must | 🟡 (In Dev) |
+| R22 | Admin dashboard renders historical maturity trend lines across previous assessment periods | Should | 🟡 (In Dev) |
+| R23 | Admin dashboard includes FinOps view comparing IT budget vs. maturity score ROI | Should | 📋 (Planned) |
+| R24 | Assessment questionnaire options include SOX (Sarbanes-Oxley) compliance checks | Could | 📋 (Planned) |
+| R25 | System calculates period-over-period percentage delta (growth/regression) per domain | Should | 📋 (Planned) |
+
+
+
 **Verification method:** requirements traceability testing — each requirement exercised through its real user journey (registration → company linking → assessment creation → submission → dashboard scoring) rather than isolated unit tests. No load/performance testing has been carried out.
 
 ## System Diagrams
